@@ -1,1 +1,224 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إدارة السكنات - Aho Camps</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+    body { background: #f5f6fa; }
+    .navbar {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .navbar h1 { font-size: 24px; }
+    .back-btn {
+      background: rgba(255,255,255,0.2);
+      border: 1px solid white;
+      color: white;
+      padding: 8px 20px;
+      border-radius: 20px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 30px auto;
+      padding: 0 20px;
+    }
+    .form-section {
+      background: white;
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      margin-bottom: 30px;
+    }
+    .form-section h2 {
+      margin-bottom: 20px;
+      color: #667eea;
+      border-bottom: 2px solid #667eea;
+      padding-bottom: 10px;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      color: #555;
+      font-weight: 600;
+    }
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    .submit-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+    .table-section {
+      background: white;
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    }
+    .table-section h2 {
+      margin-bottom: 20px;
+      color: #667eea;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 12px;
+      text-align: right;
+      border-bottom: 1px solid #eee;
+    }
+    th {
+      background: #f8f9fa;
+      font-weight: 600;
+      color: #667eea;
+    }
+    .delete-btn {
+      background: #e74c3c;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .success-msg {
+      color: green;
+      margin-top: 10px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
 
+  <nav class="navbar">
+    <h1>🏠 إدارة السكنات</h1>
+    <a href="dashboard.html" class="back-btn">← الرجوع للوحة التحكم</a>
+  </nav>
+
+  <div class="container">
+    <div class="form-section">
+      <h2>➕ إضافة سكن جديد</h2>
+      <form id="campForm">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>اسم السكن</label>
+            <input type="text" id="campName" required>
+          </div>
+          <div class="form-group">
+            <label>الموقع / العنوان</label>
+            <input type="text" id="campLocation" required>
+          </div>
+          <div class="form-group">
+            <label>السعة (عدد الغرف)</label>
+            <input type="number" id="campCapacity" required>
+          </div>
+          <div class="form-group">
+            <label>اسم المشرف</label>
+            <input type="text" id="campManager" required>
+          </div>
+          <div class="form-group">
+            <label>جوال المشرف</label>
+            <input type="tel" id="campManagerPhone" required>
+          </div>
+        </div>
+        <button type="submit" class="submit-btn">إضافة السكن</button>
+        <div class="success-msg" id="successMsg">✅ تم إضافة السكن بنجاح!</div>
+      </form>
+    </div>
+
+    <div class="table-section">
+      <h2>📋 قائمة السكنات</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>الاسم</th>
+            <th>الموقع</th>
+            <th>السعة</th>
+            <th>المشرف</th>
+            <th>الجوال</th>
+            <th>الإشغال</th>
+            <th>إجراء</th>
+          </tr>
+        </thead>
+        <tbody id="campsTable">
+          <tr><td colspan="7" style="text-align:center">جاري التحميل...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="js/firebase-config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/database.js"></script>
+
+  <script>
+    // تحميل السكنات في الجدول
+    async function loadCamps() {
+      const camps = await getAllCamps();
+      const tbody = document.getElementById('campsTable');
+      
+      if (camps.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">لا يوجد سكنات مسجلة</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = camps.map(camp => `
+        <tr>
+          <td>${camp.name}</td>
+          <td>${camp.location}</td>
+          <td>${camp.capacity}</td>
+          <td>${camp.managerName}</td>
+          <td>${camp.managerPhone}</td>
+          <td>${camp.currentOccupancy || 0} / ${camp.capacity}</td>
+          <td><button class="delete-btn" onclick="deleteCamp('${camp.id}')">حذف</button></td>
+        </tr>
+      `).join('');
+    }
+
+    // إضافة سكن جديد
+    document.getElementById('campForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const campData = {
+        name: document.getElementById('campName').value,
+        location: document.getElementById('campLocation').value,
+        capacity: parseInt(document.getElementById('campCapacity').value),
+        managerName: document.getElementById('campManager').value,
+        managerPhone: document.getElementById('campManagerPhone').value
+      };
+      
+      try {
+        await addCamp(campData);
+        document.getElementById('successMsg').style.display = 'block
