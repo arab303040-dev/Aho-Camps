@@ -1,1 +1,284 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة التحكم - Aho Camps v2</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Alpine.js -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#667eea',
+            secondary: '#764ba2',
+            dark: '#1a1a2e',
+            light: '#f5f6fa'
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+    body { font-family: 'Cairo', sans-serif; }
+    .glass { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
+    .card-hover { transition: all 0.3s; }
+    .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+  </style>
+</head>
+<body class="bg-dark text-white" x-data="dashboardApp()">
 
+  <!-- الشريط العلوي -->
+  <nav class="glass fixed w-full z-50 px-6 py-4">
+    <div class="flex justify-between items-center">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-gradient-to-r from-primary to-secondary rounded-lg flex items-center justify-center text-xl">🏕️</div>
+        <h1 class="text-xl font-bold">Aho Camps</h1>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="text-gray-300" x-text="userEmail"></span>
+        <button @click="logout()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg transition">تسجيل الخروج</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- المحتوى -->
+  <div class="pt-24 px-6 pb-6">
+    
+    <!-- الإحصائيات -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="glass rounded-2xl p-6 card-hover">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-gray-400 text-sm">إجمالي العمال</p>
+            <h3 class="text-3xl font-bold mt-2" x-text="stats.workers">0</h3>
+          </div>
+          <div class="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center text-2xl">👷</div>
+        </div>
+        <div class="mt-4 flex items-center gap-2 text-green-400 text-sm">
+          <span>↑ 12%</span>
+          <span class="text-gray-500">من الشهر الماضي</span>
+        </div>
+      </div>
+
+      <div class="glass rounded-2xl p-6 card-hover">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-gray-400 text-sm">عدد السكنات</p>
+            <h3 class="text-3xl font-bold mt-2" x-text="stats.camps">0</h3>
+          </div>
+          <div class="w-12 h-12 bg-secondary/20 rounded-xl flex items-center justify-center text-2xl">🏠</div>
+        </div>
+        <div class="mt-4 flex items-center gap-2 text-green-400 text-sm">
+          <span>↑ 5%</span>
+          <span class="text-gray-500">من الشهر الماضي</span>
+        </div>
+      </div>
+
+      <div class="glass rounded-2xl p-6 card-hover">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-gray-400 text-sm">نسبة الإشغال</p>
+            <h3 class="text-3xl font-bold mt-2" x-text="stats.occupancy + '%'">0%</h3>
+          </div>
+          <div class="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center text-2xl">📊</div>
+        </div>
+        <div class="mt-4 w-full bg-gray-700 rounded-full h-2">
+          <div class="bg-gradient-to-r from-primary to-secondary h-2 rounded-full" :style="'width: ' + stats.occupancy + '%'"></div>
+        </div>
+      </div>
+
+      <div class="glass rounded-2xl p-6 card-hover">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-gray-400 text-sm">الغرف الفارغة</p>
+            <h3 class="text-3xl font-bold mt-2" x-text="stats.emptyRooms">0</h3>
+          </div>
+          <div class="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center text-2xl">✅</div>
+        </div>
+        <div class="mt-4 flex items-center gap-2 text-gray-400 text-sm">
+          <span>متوفر للحجز</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- الرسوم البيانية والجداول -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- الرسم البياني -->
+      <div class="glass rounded-2xl p-6 lg:col-span-2">
+        <h3 class="text-lg font-bold mb-4">📈 إحصائيات العمال (آخر 6 أشهر)</h3>
+        <canvas id="workersChart" height="100"></canvas>
+      </div>
+
+      <!-- آخر النشاطات -->
+      <div class="glass rounded-2xl p-6">
+        <h3 class="text-lg font-bold mb-4">🔔 آخر النشاطات</h3>
+        <div class="space-y-4">
+          <template x-for="activity in activities" :key="activity.id">
+            <div class="flex items-center gap-3 p-3 bg-white/5 rounded-xl">
+              <div class="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center" x-text="activity.icon"></div>
+              <div>
+                <p class="text-sm font-semibold" x-text="activity.title"></p>
+                <p class="text-xs text-gray-400" x-text="activity.time"></p>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- الأزرار السريعة -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+      <a href="workers.html" class="glass rounded-xl p-4 text-center card-hover">
+        <div class="text-3xl mb-2">👷</div>
+        <p class="font-semibold">إدارة العمال</p>
+      </a>
+      <a href="camps.html" class="glass rounded-xl p-4 text-center card-hover">
+        <div class="text-3xl mb-2">🏠</div>
+        <p class="font-semibold">إدارة السكنات</p>
+      </a>
+      <a href="#" @click="showAddModal = true" class="glass rounded-xl p-4 text-center card-hover">
+        <div class="text-3xl mb-2">➕</div>
+        <p class="font-semibold">إضافة سريعة</p>
+      </a>
+      <a href="#" class="glass rounded-xl p-4 text-center card-hover">
+        <div class="text-3xl mb-2">📊</div>
+        <p class="font-semibold">التقارير</p>
+      </a>
+    </div>
+  </div>
+
+  <!-- نافذة الإضافة السريعة -->
+  <div x-show="showAddModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" x-cloak>
+    <div class="glass rounded-2xl p-6 w-full max-w-md mx-4">
+      <h3 class="text-xl font-bold mb-4">➕ إضافة سريعة</h3>
+      <div class="space-y-3">
+        <button @click="quickAdd('worker')" class="w-full bg-primary hover:bg-primary/80 p-4 rounded-xl text-left transition flex items-center gap-3">
+          <span class="text-2xl">👷</span>
+          <span>إضافة عامل جديد</span>
+        </button>
+        <button @click="quickAdd('camp')" class="w-full bg-secondary hover:bg-secondary/80 p-4 rounded-xl text-left transition flex items-center gap-3">
+          <span class="text-2xl">🏠</span>
+          <span>إضافة سكن جديد</span>
+        </button>
+      </div>
+      <button @click="showAddModal = false" class="w-full mt-4 bg-gray-700 hover:bg-gray-600 p-3 rounded-xl transition">إلغاء</button>
+    </div>
+  </div>
+
+  <script src="js/firebase-config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/database.js"></script>
+
+  <script>
+    function dashboardApp() {
+      return {
+        userEmail: '',
+        showAddModal: false,
+        stats: {
+          workers: 0,
+          camps: 0,
+          occupancy: 0,
+          emptyRooms: 0
+        },
+        activities: [],
+        
+        async init() {
+          // جلب الإحصائيات
+          const workers = await getAllWorkers();
+          const camps = await getAllCamps();
+          
+          this.stats.workers = workers.length;
+          this.stats.camps = camps.length;
+          
+          let totalCapacity = 0;
+          let totalOccupancy = 0;
+          camps.forEach(camp => {
+            totalCapacity += camp.capacity || 0;
+            totalOccupancy += camp.currentOccupancy || 0;
+          });
+          
+          this.stats.occupancy = totalCapacity > 0 ? Math.round((totalOccupancy / totalCapacity) * 100) : 0;
+          this.stats.emptyRooms = totalCapacity - totalOccupancy;
+          
+          // جلب النشاطات
+          this.activities = workers.slice(0, 5).map((w, i) => ({
+            id: i,
+            icon: '👷',
+            title: 'تم إضافة عامل: ' + w.name,
+            time: 'منذ قليل'
+          }));
+          
+          // رسم بياني
+          this.initChart();
+        },
+        
+        initChart() {
+          const ctx = document.getElementById('workersChart').getContext('2d');
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
+              datasets: [{
+                label: 'العمال',
+                data: [12, 19, 15, 25, 22, 30],
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                tension: 0.4,
+                fill: true
+              }]
+            },
+            options: {
+              responsive: true,
+              plugins: {
+                legend: { display: false }
+              },
+              scales: {
+                y: {
+                  grid: { color: 'rgba(255,255,255,0.1)' },
+                  ticks: { color: '#9ca3af' }
+                },
+                x: {
+                  grid: { display: false },
+                  ticks: { color: '#9ca3af' }
+                }
+              }
+            }
+          });
+        },
+        
+        logout() {
+          logoutUser();
+        },
+        
+        quickAdd(type) {
+          this.showAddModal = false;
+          if (type === 'worker') {
+            window.location.href = 'workers.html';
+          } else {
+            window.location.href = 'camps.html';
+          }
+        }
+      }
+    }
+  </script>
+
+</body>
+</html>
