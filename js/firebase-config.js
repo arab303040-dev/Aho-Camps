@@ -1,5 +1,5 @@
 const firebaseConfig = {
-  apiKey: "AIzaSyB5dt0U2OO_U6nHVcOhUZjD6NZzIS4K5Po",
+  apiKey: "AIzaSyB5dtOU200_U6nHVcOhUZjD6NZzIS4K5Po",
   authDomain: "aho-camps.firebaseapp.com",
   projectId: "aho-camps",
   storageBucket: "aho-camps.firebasestorage.app",
