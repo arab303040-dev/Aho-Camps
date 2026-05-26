@@ -1,717 +1,979 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>نظام إدارة العقود - Aho Camps</title>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<!-- SheetJS for Excel export -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>نظام إدارة العقود | AHO</title>
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<!-- SheetJS for Excel import -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Cairo',sans-serif;background:#f0f4f3;color:#1a1a1a;direction:rtl;min-height:100vh}
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
 
-/* Loading Screen */
-#loadingScreen{position:fixed;inset:0;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);z-index:50;display:flex;align-items:center;justify-content:center;flex-direction:column;opacity:1;transition:opacity .3s}
-#loadingScreen.hidden{opacity:0;pointer-events:none}
-.loading{display:inline-block;width:20px;height:20px;border:3px solid rgba(255,255,255,0.3);border-radius:50%;border-top-color:white;animation:spin 1s ease-in-out infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
+  :root {
+    --bg-body: #fefcf5;
+    --bg-surface: #ffffff;
+    --bg-card: #ffffff;
+    --bg-side: #f9f7f0;
+    --border-light: #e9e5da;
+    --border-med: #ddd6c8;
+    --text-primary: #2c2a24;
+    --text-secondary: #6b6256;
+    --text-muted: #9b927e;
+    --accent: #c27e3a;
+    --accent-light: #e5d5bd;
+    --accent-bg: rgba(194, 126, 58, 0.08);
+    --green: #2b7a3e;
+    --green-bg: rgba(43, 122, 62, 0.1);
+    --amber: #b45f1b;
+    --amber-bg: rgba(180, 95, 27, 0.1);
+    --red: #bc4a2c;
+    --red-bg: rgba(188, 74, 44, 0.08);
+    --purple: #8a6e4b;
+    --purple-bg: rgba(138, 110, 75, 0.1);
+    --teal: #3a7b6e;
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.03);
+    --shadow-md: 0 8px 20px rgba(0, 0, 0, 0.03), 0 2px 4px rgba(0, 0, 0, 0.02);
+  }
 
-/* Header */
-.header{background:linear-gradient(135deg,#063a2e 0%,#0F6E56 55%,#1D9E75 100%);padding:0;position:sticky;top:0;z-index:100;box-shadow:0 4px 24px rgba(0,0,0,0.22)}
-.header-inner{display:flex;align-items:center;justify-content:space-between;padding:14px 28px}
-.logo{display:flex;align-items:center;gap:12px}
-.logo-icon{width:44px;height:44px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;border:1px solid rgba(255,255,255,0.2)}
-.logo-text h1{font-size:18px;font-weight:700;color:#fff;letter-spacing:-0.3px}
-.logo-text p{font-size:11px;color:rgba(255,255,255,0.65);margin-top:1px}
+  body {
+    background: var(--bg-body);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    line-height: 1.45;
+  }
 
-.header-actions{display:flex;gap:10px;align-items:center}
-.user-info{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.15);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:12px}
-.user-info span{font-weight:600}
+  #loadingScreen {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    opacity: 1;
+    transition: opacity 0.3s;
+  }
 
-.btn-add{background:rgba(255,255,255,0.18);color:#fff;border:1px solid rgba(255,255,255,0.3);padding:8px 18px;border-radius:8px;font-family:'Cairo',sans-serif;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;font-weight:600}
-.btn-add:hover{background:rgba(255,255,255,0.28)}
-.btn-export{background:#f0a500;color:#fff;border:none;padding:8px 18px;border-radius:8px;font-family:'Cairo',sans-serif;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;font-weight:600}
-.btn-export:hover{background:#d49000;transform:translateY(-1px)}
-.btn-export-pdf{background:#e84343;color:#fff;border:none;padding:8px 18px;border-radius:8px;font-family:'Cairo',sans-serif;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;font-weight:600}
-.btn-export-pdf:hover{background:#c73333;transform:translateY(-1px)}
-.btn-logout{background:#e84343;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-family:'Cairo',sans-serif;font-size:13px;cursor:pointer;transition:all .2s;font-weight:600}
-.btn-logout:hover{background:#c73333}
+  #loadingScreen.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
 
-/* Stats bar */
-.stats-bar{background:#fff;border-bottom:1px solid #e0e8e5;padding:14px 28px;display:flex;gap:14px;overflow-x:auto}
-.stat-card{background:#f5faf8;border:1px solid #d0e8df;border-radius:10px;padding:12px 18px;min-width:160px;flex-shrink:0;transition:box-shadow .2s;cursor:default}
-.stat-card:hover{box-shadow:0 4px 16px rgba(15,110,86,0.1)}
-.stat-label{font-size:11px;color:#5a7a70;margin-bottom:4px;font-weight:500}
-.stat-value{font-size:22px;font-weight:700}
-.stat-value.teal{color:#0F6E56}
-.stat-value.amber{color:#BA7517}
-.stat-value.red{color:#A32D2D}
-.stat-value.blue{color:#185FA5}
-.stat-value.orange{color:#c05a00}
+  .loading {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+  }
 
-/* Legend bar */
-.legend-bar{background:#fff;border-bottom:1px solid #e0e8e5;padding:8px 28px;display:flex;gap:20px;align-items:center;font-size:12px;color:#5a7a70}
-.legend-item{display:flex;align-items:center;gap:6px}
-.legend-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
-.ld-red{background:#fde8e8;border:2px solid #e24b4a}
-.ld-blue{background:#ddeeff;border:2px solid #2979d4}
-.ld-amber{background:#fff3dc;border:2px solid #d4920f}
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
 
-/* Toolbar */
-.toolbar{padding:14px 28px;background:#fff;border-bottom:1px solid #e0e8e5;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.search-box{position:relative;flex:1;min-width:200px}
-.search-box input{width:100%;padding:9px 38px 9px 14px;border:1px solid #cce0d8;border-radius:8px;font-family:'Cairo',sans-serif;font-size:13px;background:#f5faf8;color:#1a1a1a;direction:rtl;transition:border-color .2s}
-.search-box input:focus{outline:none;border-color:#1D9E75;background:#fff}
-.search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#8aada4;font-size:15px}
-select{padding:9px 12px;border:1px solid #cce0d8;border-radius:8px;font-family:'Cairo',sans-serif;font-size:13px;background:#f5faf8;color:#1a1a1a;cursor:pointer;transition:border-color .2s}
-select:focus{outline:none;border-color:#1D9E75}
-.tab-group{display:flex;background:#f0f4f3;border-radius:8px;padding:3px;gap:2px}
-.tab-btn{padding:6px 14px;border-radius:6px;border:none;background:transparent;font-family:'Cairo',sans-serif;font-size:12px;color:#5a7a70;cursor:pointer;transition:all .2s;font-weight:500}
-.tab-btn.active{background:#fff;color:#0F6E56;font-weight:700;box-shadow:0 1px 6px rgba(0,0,0,0.1)}
+  .app {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 0 16px 24px;
+  }
 
-/* Table */
-.table-container{margin:16px 28px;background:#fff;border-radius:12px;border:1px solid #d8eae3;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.05)}
-.table-header{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e8f0ed}
-.table-header h3{font-size:14px;font-weight:700;color:#0F6E56}
-.result-count{font-size:12px;color:#5a7a70;background:#f0f4f3;padding:4px 12px;border-radius:20px;font-weight:500}
+  /* header */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 0 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+    border-bottom: 1px solid var(--border-light);
+    margin-bottom: 20px;
+  }
+  .logo-area {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .logo-img {
+    width: 48px;
+    height: 48px;
+    border-radius: 60px;
+    object-fit: cover;
+    border: 2px solid var(--accent-light);
+    background: white;
+  }
+  .brand h1 {
+    font-size: 1.35rem;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    color: var(--text-primary);
+  }
+  .brand p {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+  .header-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 40px;
+    font-weight: 500;
+    font-size: 0.8rem;
+    border: 1px solid var(--border-med);
+    background: white;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    background: var(--bg-surface);
+  }
+  .btn i { font-size: 1.1rem; }
+  .btn:hover {
+    background: var(--bg-side);
+    border-color: var(--accent);
+    transform: translateY(-1px);
+  }
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+  .btn-primary:hover {
+    background: #b0692c;
+    border-color: #b0692c;
+  }
+  .lang-btn {
+    background: var(--accent-bg);
+    border-color: var(--accent-light);
+  }
 
-.tbl-wrap{overflow-x:auto;max-height:520px;overflow-y:auto}
-table{width:100%;border-collapse:collapse;min-width:1350px;font-size:12.5px}
-thead th{padding:10px 12px;background:#f5faf8;text-align:right;font-weight:700;color:#3a6a5a;font-size:11.5px;border-bottom:1px solid #d8eae3;white-space:nowrap;cursor:pointer;user-select:none;position:sticky;top:0;z-index:2}
-thead th:hover{color:#0F6E56;background:#e8f4ef}
+  /* tabs */
+  .nav-tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--border-light);
+    padding-bottom: 6px;
+  }
+  .nav-tab {
+    padding: 10px 20px;
+    border-radius: 40px;
+    font-weight: 500;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .nav-tab i { font-size: 1.1rem; }
+  .nav-tab.active {
+    background: var(--bg-surface);
+    color: var(--accent);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-light);
+  }
+  .badge {
+    background: var(--accent-bg);
+    padding: 2px 8px;
+    border-radius: 30px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .badge.expired { background: var(--red-bg); color: var(--red); }
+  .badge.alert { background: var(--amber-bg); color: var(--amber); }
 
-tbody tr{border-bottom:1px solid #f0f4f3;transition:background .15s;cursor:pointer}
-tbody tr:hover{filter:brightness(0.97)}
-tbody tr.row-expired{background:#fff}
-tbody tr.row-red{background:#fff5f5}
-tbody tr.row-blue{background:#f0f6ff}
-tbody tr.row-ok{background:#fff}
+  /* stats row */
+  .stats-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--bg-surface);
+    border-radius: var(--radius-lg);
+    padding: 12px 20px;
+    flex: 1 1 160px;
+    border: 1px solid var(--border-light);
+    box-shadow: var(--shadow-sm);
+  }
+  .stat-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+  }
+  .stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+  }
 
-.date-red{color:#c0392b;font-weight:700;background:#fde8e8;padding:3px 8px;border-radius:5px;border:1px solid #e24b4a;display:inline-block}
-.date-blue{color:#1558b0;font-weight:700;background:#ddeeff;padding:3px 8px;border-radius:5px;border:1px solid #2979d4;display:inline-block}
-.date-normal{color:#1a1a1a}
+  /* toolbar */
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 20px;
+    background: var(--bg-surface);
+    padding: 12px 16px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-light);
+  }
+  .search-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-body);
+    padding: 6px 12px;
+    border-radius: 40px;
+    border: 1px solid var(--border-med);
+    flex: 1 1 220px;
+  }
+  .search-box input {
+    background: none;
+    border: none;
+    outline: none;
+    flex: 1;
+    font-size: 0.8rem;
+  }
+  select, .filter-select {
+    background: var(--bg-body);
+    border: 1px solid var(--border-med);
+    padding: 7px 28px 7px 12px;
+    border-radius: 30px;
+    font-size: 0.75rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .relative { position: relative; }
 
-td{padding:10px 12px;white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
-.td-city{font-weight:700;color:#0F6E56}
-.td-project{font-size:11px;color:#5a7a70;background:#f0f4f3;padding:2px 8px;border-radius:4px;display:inline-block}
+  /* table */
+  .table-wrapper {
+    background: var(--bg-surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-light);
+    overflow-x: auto;
+    box-shadow: var(--shadow-sm);
+  }
+  .contract-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.75rem;
+    min-width: 1000px;
+  }
+  .contract-table th {
+    text-align: left;
+    padding: 14px 10px;
+    background: var(--bg-side);
+    color: var(--text-secondary);
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-light);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .contract-table td {
+    padding: 12px 10px;
+    border-bottom: 1px solid var(--border-light);
+    vertical-align: middle;
+  }
+  .contract-table tr:hover td {
+    background: var(--accent-bg);
+  }
+  .badge-status {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 40px;
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+  .badge-green { background: var(--green-bg); color: var(--green); }
+  .badge-amber { background: var(--amber-bg); color: var(--amber); }
+  .badge-red { background: var(--red-bg); color: var(--red); }
+  .badge-blue { background: var(--accent-bg); color: var(--accent); }
+  .row-actions {
+    display: flex;
+    gap: 6px;
+    opacity: 0.5;
+    transition: opacity 0.15s;
+  }
+  tr:hover .row-actions { opacity: 1; }
+  .action-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--text-secondary);
+    padding: 4px;
+    border-radius: 30px;
+  }
+  .action-icon:hover { background: var(--border-light); color: var(--accent); }
 
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
-.badge-active{background:#d6f0e7;color:#0a5c3f}
-.badge-expiring-blue{background:#ddeeff;color:#1558b0}
-.badge-expiring-red{background:#fde8e8;color:#a32d2d}
-.badge-expired{background:#f5e8e8;color:#7a2020}
-.badge-monthly{background:#e6f1fb;color:#185FA5}
-.badge-quarterly{background:#EAF3DE;color:#3B6D11}
-.badge-annual{background:#EEEDFE;color:#534AB7}
+  /* modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  .modal {
+    background: var(--bg-surface);
+    width: 90%;
+    max-width: 780px;
+    max-height: 85vh;
+    border-radius: 28px;
+    box-shadow: var(--shadow-md);
+    overflow-y: auto;
+    border: 1px solid var(--border-light);
+  }
+  .modal-header, .modal-footer {
+    padding: 16px 22px;
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .modal-footer {
+    border-top: 1px solid var(--border-light);
+    border-bottom: none;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2,1fr);
+    gap: 16px;
+    padding: 20px 22px;
+  }
+  .full-width { grid-column: span 2; }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .form-group label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+  }
+  .form-group input, .form-group select, .form-group textarea {
+    background: var(--bg-body);
+    border: 1px solid var(--border-med);
+    border-radius: 14px;
+    padding: 8px 12px;
+    font-family: inherit;
+    font-size: 0.8rem;
+    outline: none;
+  }
+  .form-group input:focus, .form-group select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(194,126,58,0.2);
+  }
 
-.contract-link{color:#0F6E56;font-size:11px;display:inline-flex;align-items:center;gap:3px;text-decoration:none;font-weight:600}
-.contract-link:hover{text-decoration:underline}
+  /* import preview */
+  .upload-zone {
+    border: 2px dashed var(--border-med);
+    border-radius: 24px;
+    padding: 30px;
+    text-align: center;
+    cursor: pointer;
+    background: var(--bg-side);
+  }
+  .import-preview-box {
+    background: var(--bg-side);
+    border-radius: 20px;
+    padding: 14px;
+    margin-top: 18px;
+    font-size: 0.7rem;
+    max-height: 280px;
+    overflow: auto;
+  }
 
-.progress-wrap{display:flex;align-items:center;gap:7px}
-.progress-bar{flex:1;height:5px;background:#e8f0ed;border-radius:3px;overflow:hidden;min-width:60px}
-.progress-fill{height:100%;border-radius:3px}
-.prog-good{background:#1D9E75}
-.prog-warn{background:#EF9F27}
-.prog-danger{background:#E24B4A}
-.progress-pct{font-size:10px;color:#5a7a70;min-width:28px}
+  /* alerts and analytics */
+  .alerts-container, .analytics-grid {
+    background: var(--bg-surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-light);
+    padding: 16px;
+  }
+  .alert-item {
+    display: flex;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border-light);
+    align-items: center;
+  }
+  .bar-chart .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 8px 0;
+  }
+  .bar-fill {
+    background: var(--accent);
+    height: 28px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    padding-left: 8px;
+    color: white;
+    font-weight: 600;
+    font-size: 0.7rem;
+  }
+  .toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1100;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .toast {
+    background: white;
+    border-left: 5px solid var(--green);
+    padding: 12px 18px;
+    border-radius: 60px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.05);
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
 
-.rent-amount{font-weight:700;color:#1a1a1a}
-.rent-cur{font-size:10px;color:#8aada4;margin-right:2px}
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent-bg);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
 
-.empty{text-align:center;padding:56px;color:#8aada4}
-.empty-icon{font-size:40px;margin-bottom:12px;opacity:0.5}
+  .btn-logout {
+    background: var(--red-bg);
+    border-color: var(--red);
+    color: var(--red);
+  }
 
-/* Detail panel */
-.detail-overlay{position:fixed;top:0;right:0;width:390px;height:100%;background:#fff;border-left:1px solid #d8eae3;box-shadow:-10px 0 40px rgba(0,0,0,0.12);z-index:200;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);overflow-y:auto}
-.detail-overlay.open{transform:translateX(0)}
-.detail-header{padding:18px 20px;border-bottom:1px solid #e8f0ed;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:10}
-.detail-title{font-size:16px;font-weight:700;color:#0F6E56}
-.close-btn{background:#f0f4f3;border:1px solid #d8eae3;border-radius:6px;padding:5px 11px;cursor:pointer;font-size:16px;color:#5a7a70;transition:background .2s}
-.close-btn:hover{background:#e0ebe6}
-.detail-body{padding:18px 20px}
-.detail-section{margin-bottom:20px}
-.detail-section h4{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:#8aada4;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f0f4f3}
-.detail-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f8faf9}
-.detail-row:last-child{border-bottom:none}
-.detail-key{font-size:12px;color:#5a7a70}
-.detail-val{font-size:12px;font-weight:600;color:#1a1a1a;text-align:left}
-
-/* Modal */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:300;display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
-.modal-overlay.open{display:flex}
-.modal{background:#fff;border-radius:14px;padding:26px;width:90%;max-width:600px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
-.modal h2{font-size:18px;font-weight:700;margin-bottom:18px;color:#0F6E56}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.form-group{display:flex;flex-direction:column;gap:5px}
-.form-group label{font-size:12px;color:#5a7a70;font-weight:600}
-.form-group input,.form-group select,.form-group textarea{padding:9px 12px;border:1px solid #cce0d8;border-radius:8px;font-family:'Cairo',sans-serif;font-size:13px;background:#f5faf8;color:#1a1a1a;transition:border-color .2s}
-.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:#1D9E75;background:#fff}
-.form-group textarea{resize:vertical;min-height:60px}
-.modal-actions{display:flex;gap:10px;margin-top:18px;justify-content:flex-end}
-.btn-cancel{padding:9px 18px;border:1px solid #cce0d8;border-radius:8px;background:transparent;font-family:'Cairo',sans-serif;font-size:13px;cursor:pointer;color:#5a7a70}
-.btn-save{padding:9px 24px;background:#0F6E56;color:#fff;border:none;border-radius:8px;font-family:'Cairo',sans-serif;font-size:13px;cursor:pointer;font-weight:700;transition:background .2s}
-.btn-save:hover{background:#0a5040}
-
-/* Toast */
-.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:#1a1a1a;color:#fff;padding:10px 22px;border-radius:10px;font-size:13px;opacity:0;transition:all .35s;z-index:999;white-space:nowrap}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-
-@media print{
-  .header-actions,.toolbar,.legend-bar,.stats-bar,.table-header .result-count,.detail-overlay{display:none!important}
-  .table-container{margin:0;border:none;box-shadow:none}
-  tbody tr.row-red{background:#fff5f5!important;-webkit-print-color-adjust:exact}
-  tbody tr.row-blue{background:#f0f6ff!important;-webkit-print-color-adjust:exact}
-}
+  .btn-logout:hover {
+    background: var(--red);
+    color: white;
+  }
 </style>
 </head>
 <body>
 
 <!-- Loading Screen -->
 <div id="loadingScreen">
-  <div class="loading mb-4"></div>
-  <p style="color:#fff;font-size:14px">جاري تحميل النظام...</p>
+  <div class="loading"></div>
+  <p style="color: white; margin-top: 16px; font-size: 14px;">جاري تحميل النظام...</p>
 </div>
 
-<!-- HEADER -->
-<div class="header">
-  <div class="header-inner">
-    <div class="logo">
-      <div class="logo-icon">📋</div>
-      <div class="logo-text">
-        <h1>نظام إدارة العقود</h1>
-        <p>Contract Management System</p>
-      </div>
-    </div>
-    <div class="header-actions">
-      <div class="user-info">
-        <span>👤 <span id="userName">المستخدم</span></span>
-      </div>
-      <button class="btn-export" onclick="exportExcel()">📊 تصدير Excel</button>
-      <button class="btn-export-pdf" onclick="exportPDF()">🖨️ طباعة / PDF</button>
-      <button class="btn-add" onclick="openModal()">＋ إضافة عقد جديد</button>
-      <button class="btn-logout" onclick="logoutUser()">🚪 خروج</button>
-    </div>
-  </div>
-</div>
-
-<!-- STATS -->
-<div class="stats-bar" id="statsBar"></div>
-
-<!-- LEGEND -->
-<div class="legend-bar">
-  <strong style="color:#3a6a5a;font-size:12px">دليل الألوان:</strong>
-  <div class="legend-item"><div class="legend-dot ld-red"></div> ينتهي خلال أقل من شهر (تنبيه عاجل)</div>
-  <div class="legend-item"><div class="legend-dot ld-blue"></div> ينتهي خلال شهر إلى شهرين (تنبيه مبكر)</div>
-  <div class="legend-item"><div class="legend-dot ld-amber"></div> ينتهي خلال 3 أشهر</div>
-</div>
-
-<!-- TOOLBAR -->
-<div class="toolbar">
-  <div class="search-box">
-    <input type="text" id="searchInput" placeholder="🔍 بحث بالمدينة، المخيم، المالك، رقم العقد..." oninput="filterContracts()">
-  </div>
-  <select id="cityFilter" onchange="filterContracts()">
-    <option value="">كل المدن</option>
-  </select>
-  <select id="statusFilter" onchange="filterContracts()">
-    <option value="">كل الحالات</option>
-    <option value="active">نشط</option>
-    <option value="expiring_red">ينتهي &lt; شهر 🔴</option>
-    <option value="expiring_blue">ينتهي &lt; شهرين 🔵</option>
-    <option value="expiring">ينتهي &lt; 3 أشهر</option>
-    <option value="expired">منتهي</option>
-  </select>
-  <select id="paymentFilter" onchange="filterContracts()">
-    <option value="">دورة الدفع</option>
-    <option value="شهري">شهري</option>
-    <option value="ربع سنوي">ربع سنوي</option>
-    <option value="سنوي">سنوي</option>
-  </select>
-  <div class="tab-group">
-    <button class="tab-btn active" onclick="setTab('all',this)">الكل</button>
-    <button class="tab-btn" onclick="setTab('active',this)">نشط</button>
-    <button class="tab-btn" onclick="setTab('expiring_red',this)">🔴 عاجل</button>
-    <button class="tab-btn" onclick="setTab('expiring_blue',this)">🔵 تنبيه</button>
-    <button class="tab-btn" onclick="setTab('expired',this)">منتهي</button>
-  </div>
-</div>
-
-<!-- TABLE -->
-<div class="table-container">
-  <div class="table-header">
-    <h3>📋 سجل العقود</h3>
-    <span class="result-count" id="resultCount">0 عقد</span>
-  </div>
-  <div class="tbl-wrap">
-    <table id="mainTable">
-      <thead>
-        <tr>
-          <th onclick="sortBy('city')">المدينة ↕</th>
-          <th onclick="sortBy('camp')">المخيم ↕</th>
-          <th onclick="sortBy('projectId')">رقم المشروع ↕</th>
-          <th onclick="sortBy('owner')">المالك / المؤجر ↕</th>
-          <th>الطابق / الشقة</th>
-          <th>الغرف / السكان</th>
-          <th onclick="sortBy('annualRent')">الإيجار السنوي ↕</th>
-          <th onclick="sortBy('paymentCycle')">دورة الدفع ↕</th>
-          <th onclick="sortBy('startDate')">بداية العقد ↕</th>
-          <th onclick="sortBy('endDate')">نهاية العقد ↕</th>
-          <th>الدفعة القادمة</th>
-          <th>التقدم</th>
-          <th>الحالة</th>
-          <th>العقد</th>
-          <th>ملاحظات</th>
-        </tr>
-      </thead>
-      <tbody id="contractsTable"></tbody>
-    </table>
-    <div class="empty" id="emptyState" style="display:none">
-      <div class="empty-icon">📋</div>
-      <p style="font-size:15px;font-weight:600;margin-bottom:6px">لا توجد عقود تطابق البحث</p>
-      <p style="font-size:13px">جرب تعديل معايير الفلترة</p>
-    </div>
-  </div>
-</div>
-
-<!-- DETAIL PANEL -->
-<div class="detail-overlay" id="detailPanel">
-  <div class="detail-header">
-    <span class="detail-title" id="detailTitle">تفاصيل العقد</span>
-    <button class="close-btn" onclick="closeDetail()">✕</button>
-  </div>
-  <div class="detail-body" id="detailBody"></div>
-</div>
-
-<!-- ADD MODAL -->
-<div class="modal-overlay" id="addModal" onclick="if(event.target===this)closeModal()">
-  <div class="modal">
-    <h2>➕ إضافة عقد جديد</h2>
-    <div class="form-grid">
-      <div class="form-group"><label>المدينة *</label><input id="f_city" placeholder="الرياض"></div>
-      <div class="form-group"><label>المخيم</label><input id="f_camp" placeholder="مخيم أ"></div>
-      <div class="form-group"><label>رقم المشروع</label><input id="f_project" placeholder="PRJ-001"></div>
-      <div class="form-group"><label>المالك / المؤجر *</label><input id="f_owner" placeholder="محمد أحمد"></div>
-      <div class="form-group"><label>الطابق</label><input id="f_floor" placeholder="2"></div>
-      <div class="form-group"><label>رقم الشقة</label><input id="f_flat" placeholder="201"></div>
-      <div class="form-group"><label>عدد الغرف</label><input id="f_rooms" type="number" placeholder="3" min="0"></div>
-      <div class="form-group"><label>عدد السكان</label><input id="f_residents" type="number" placeholder="4" min="0"></div>
-      <div class="form-group"><label>توزيع الغرف</label><input id="f_dist" placeholder="2+1"></div>
-      <div class="form-group"><label>الإيجار السنوي (ريال) *</label><input id="f_rent" type="number" placeholder="60000" min="0"></div>
-      <div class="form-group"><label>دورة الدفع</label>
-        <select id="f_payment"><option>شهري</option><option>ربع سنوي</option><option>سنوي</option></select>
-      </div>
-      <div class="form-group"><label>تاريخ بداية العقد *</label><input id="f_start" type="date"></div>
-      <div class="form-group"><label>تاريخ نهاية العقد *</label><input id="f_end" type="date"></div>
-      <div class="form-group"><label>الدفعة القادمة</label><input id="f_nextPay" type="date"></div>
-      <div class="form-group"><label>رقم العقد</label><input id="f_contractNo" placeholder="CNT-2025-001"></div>
-      <div class="form-group"><label>رابط العقد</label><input id="f_link" placeholder="https://..."></div>
-      <div class="form-group"><label>تاريخ نهاية المشروع</label><input id="f_projEnd" type="date"></div>
-    </div>
-    <div class="form-group" style="margin-top:12px"><label>ملاحظات</label>
-      <textarea id="f_notes" placeholder="أي ملاحظات إضافية..."></textarea>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">إلغاء</button>
-      <button class="btn-save" onclick="saveContract()">💾 حفظ العقد</button>
-    </div>
-  </div>
-</div>
-
-<!-- TOAST -->
-<div class="toast" id="toast"></div>
+<div class="app" id="app"></div>
+<div class="toast-container" id="toast-container"></div>
 
 <script src="js/firebase-config.js"></script>
 
 <script>
-// ===== DATA =====
-let contracts = [];
-let filtered=[], sortKey='', sortDir=1, activeTab='all';
-const NOW = new Date();
+  // ---------- STATE ----------
+  let lang = 'en';
+  let currentTab = 'active'; // active, expired, analytics, alerts, log
+  let contracts = [];
+  let activityLog = [];
+  let nextId = 1;
+  let hiddenCols = [];
+  let sortColumn = 'lease_end';
+  let sortDirection = 1;
+  let filterCity = '', filterStatus = '', filterCycle = '', searchText = '';
+  let selectedRows = new Set();
+  let importPreviewData = null;
+  let currentUser = null;
 
-// ===== FIREBASE AUTH CHECK =====
-firebase.auth().onAuthStateChanged((user) => {
-  const loadingScreen = document.getElementById('loadingScreen');
-  
-  if (user) {
-    console.log('✅ المستخدم مسجل:', user.email);
-    document.getElementById('userName').textContent = user.displayName || user.email.split('@')[0];
-    loadingScreen.classList.add('hidden');
+  const PAYMENT_CYCLES = ['Annual', 'Annual/variable', 'Biannual', 'One-time', 'Temporary', 'Quarterly'];
+  const STATUS_LIST = ['Active', 'Expiring Soon', 'Expired', 'New', 'Renewed', 'Pending Payment', 'Closed'];
+
+  const allColumns = [
+    {key:'city', labelEn:'City', labelAr:'المدينة', width:90},
+    {key:'camp', labelEn:'Camp', labelAr:'المخيم', width:90},
+    {key:'project_id', labelEn:'Project ID', labelAr:'رقم المشروع', width:100},
+    {key:'owner', labelEn:'Owner/Lessor', labelAr:'المالك/المؤجر', width:120},
+    {key:'floor', labelEn:'Floor', labelAr:'الطابق', width:70},
+    {key:'flat', labelEn:'Flat', labelAr:'الشقة', width:70},
+    {key:'rooms', labelEn:'Rooms', labelAr:'الغرف', width:70},
+    {key:'residents', labelEn:'Residents', labelAr:'السكان', width:80},
+    {key:'room_dist', labelEn:'Distribution', labelAr:'توزيع الغرف', width:100},
+    {key:'payment_cycle', labelEn:'Payment Cycle', labelAr:'دورة الدفع', width:110},
+    {key:'lease_start', labelEn:'Start of Lease', labelAr:'بداية الإيجار', width:100},
+    {key:'lease_end', labelEn:'End of Lease', labelAr:'نهاية الإيجار', width:100},
+    {key:'next_payment', labelEn:'Next Payment', labelAr:'الدفعة القادمة', width:100},
+    {key:'contract_no', labelEn:'Contract No', labelAr:'رقم العقد', width:100},
+    {key:'contract_link', labelEn:'Contract Link', labelAr:'رابط العقد', width:100},
+    {key:'notes', labelEn:'Notes', labelAr:'ملاحظات', width:130},
+    {key:'proj_end_date', labelEn:'Proj End Date', labelAr:'تاريخ نهاية المشروع', width:110},
+    {key:'status', labelEn:'Status', labelAr:'الحالة', width:100}
+  ];
+
+  // ===== FIREBASE AUTH CHECK =====
+  firebase.auth().onAuthStateChanged((user) => {
+    const loadingScreen = document.getElementById('loadingScreen');
     
-    // Load data from Firestore
-    loadContractsFromFirebase();
-    
-  } else {
-    console.log('❌ لا يوجد مستخدم مسجل');
-    window.location.replace('login.html');
+    if (user) {
+      console.log('✅ المستخدم مسجل:', user.email);
+      currentUser = user;
+      loadingScreen.classList.add('hidden');
+      
+      // Load data from Firestore
+      loadContractsFromFirebase();
+      
+    } else {
+      console.log('❌ لا يوجد مستخدم مسجل');
+      window.location.replace('login.html');
+    }
+  });
+
+  // ===== LOAD CONTRACTS FROM FIREBASE =====
+  async function loadContractsFromFirebase() {
+    try {
+      const snapshot = await firebase.firestore().collection('contracts').get();
+      
+      contracts = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      nextId = contracts.length > 0 ? Math.max(...contracts.map(c => c.id || 1)) + 1 : 1;
+      
+      updateContractStatuses();
+      render();
+      
+    } catch (error) {
+      console.error('❌ خطأ في تحميل البيانات:', error);
+      toast(t('Error loading data','خطأ في تحميل البيانات'), 'error');
+    }
   }
-});
 
-// ===== LOAD CONTRACTS FROM FIREBASE =====
-async function loadContractsFromFirebase() {
-  try {
-    const snapshot = await firebase.firestore().collection('contracts').get();
-    
-    contracts = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-    
-    // If no data in Firestore, use sample data
-    if (contracts.length === 0) {
-      contracts = [
-        {id:1,city:'الرياض',camp:'مخيم الشمال',projectId:'RYD-001',owner:'أحمد محمد السالم',floor:'3',flat:'301',rooms:4,residents:8,distribution:'2+2',paymentCycle:'شهري',annualRent:72000,startDate:'2024-01-01',endDate:'2025-06-30',nextPayment:'2025-06-01',contractNo:'CNT-001',contractLink:'',notes:'تجديد سنوي',projEndDate:'2026-12-31'},
-        {id:2,city:'جدة',camp:'مخيم الغرب',projectId:'JED-001',owner:'فاطمة خالد العمري',floor:'2',flat:'205',rooms:5,residents:10,distribution:'3+2',paymentCycle:'سنوي',annualRent:96000,startDate:'2024-03-15',endDate:'2026-03-14',nextPayment:'2026-03-15',contractNo:'CNT-003',contractLink:'',notes:'يشمل صيانة',projEndDate:'2027-03-14'},
-      ];
+  // ===== LOGOUT =====
+  window.logoutUser = function() {
+    if (confirm(t('Are you sure?','هل أنت متأكد؟'))) {
+      firebase.auth().signOut()
+        .then(() => {
+          console.log('✅ تم تسجيل الخروج');
+          window.location.replace('login.html');
+        })
+        .catch((error) => {
+          console.error('❌ خطأ:', error);
+          toast(t('Logout error','خطأ في تسجيل الخروج'), 'error');
+        });
+    }
+  };
+
+  // helpers
+  function t(en, ar) { return lang === 'en' ? en : ar; }
+
+  function computeStatus(contract) {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    let endDate = contract.lease_end ? new Date(contract.lease_end) : (contract.proj_end_date ? new Date(contract.proj_end_date) : null);
+    if (!endDate) return 'Active';
+    const diffDays = (endDate - today) / (1000*60*60*24);
+    if (diffDays < 0) return 'Expired';
+    if (diffDays <= 30) return 'Expiring Soon';
+    return 'Active';
+  }
+
+  function updateContractStatuses() {
+    contracts.forEach(c => { c._cachedStatus = computeStatus(c); });
+  }
+
+  function getFilteredContracts(pool = null) {
+    let source = pool === 'expired' ? contracts.filter(c => computeStatus(c) === 'Expired') : 
+                  (pool === 'active' ? contracts.filter(c => computeStatus(c) !== 'Expired') : contracts);
+    if (currentTab === 'active') source = contracts.filter(c => computeStatus(c) !== 'Expired');
+    else if (currentTab === 'expired') source = contracts.filter(c => computeStatus(c) === 'Expired');
+    else source = contracts;
+    return source.filter(c => {
+      if (filterCity && c.city !== filterCity) return false;
+      if (filterStatus && computeStatus(c) !== filterStatus) return false;
+      if (filterCycle && c.payment_cycle !== filterCycle) return false;
+      if (searchText) {
+        const str = `${c.city||''} ${c.camp||''} ${c.owner||''} ${c.contract_no||''}`.toLowerCase();
+        if (!str.includes(searchText.toLowerCase())) return false;
+      }
+      return true;
+    });
+  }
+
+  function logAction(action, detail) {
+    activityLog.unshift({ action, detail, time: new Date().toLocaleString() });
+    if(activityLog.length > 200) activityLog.pop();
+  }
+
+  function toast(msg, type='success') {
+    const container = document.getElementById('toast-container');
+    const toastEl = document.createElement('div');
+    toastEl.className = 'toast';
+    toastEl.style.borderLeftColor = type === 'error' ? '#bc4a2c' : (type === 'warning' ? '#b45f1b' : '#2b7a3e');
+    toastEl.innerHTML = `<i class="ti ${type==='success'?'ti-check':type==='error'?'ti-alert-circle':'ti-alert-triangle'}" style="margin-right:8px"></i>${msg}`;
+    container.appendChild(toastEl);
+    setTimeout(() => toastEl.remove(), 2800);
+  }
+
+  // duplicate check
+  function isDuplicateContractNo(contractNo, excludeId = null) {
+    return contracts.some(c => c.contract_no === contractNo && c.id !== excludeId);
+  }
+
+  // CRUD
+  async function saveContractData(formData, editId = null) {
+    if (formData.contract_no && isDuplicateContractNo(formData.contract_no, editId)) {
+      toast(t('Duplicate contract number!', 'رقم العقد مكرر!'), 'error');
+      return false;
     }
     
-    populateCityFilter();
-    updateStats();
-    filterContracts();
-    
-  } catch (error) {
-    console.error('❌ خطأ في تحميل البيانات:', error);
-    showToast('⚠ خطأ في تحميل البيانات من النظام');
+    try {
+      if (editId === null || editId === 'null') {
+        const newId = Date.now().toString();
+        const newContract = { id: newId, ...formData, created_at: new Date().toISOString() };
+        await firebase.firestore().collection('contracts').doc(newId).set(newContract);
+        contracts.push(newContract);
+        logAction(t('Add','إضافة'), `${newContract.contract_no || newContract.city}`);
+        toast(t('Contract saved', 'تم حفظ العقد'));
+      } else {
+        const idx = contracts.findIndex(c => c.id === editId);
+        if (idx !== -1) {
+          const updatedContract = { ...contracts[idx], ...formData };
+          await firebase.firestore().collection('contracts').doc(editId).update(formData);
+          contracts[idx] = updatedContract;
+          logAction(t('Edit','تعديل'), `${contracts[idx].contract_no || contracts[idx].city}`);
+          toast(t('Contract updated', 'تم تحديث العقد'));
+        }
+      }
+      updateContractStatuses();
+      render();
+      return true;
+    } catch (error) {
+      console.error('❌ خطأ:', error);
+      toast(t('Error saving contract','خطأ في حفظ العقد'), 'error');
+      return false;
+    }
   }
-}
 
-// ===== LOGOUT =====
-function logoutUser() {
-  if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
-    firebase.auth().signOut()
-      .then(() => {
-        console.log('✅ تم تسجيل الخروج');
-        window.location.replace('login.html');
-      })
-      .catch((error) => {
+  async function deleteContractById(id) {
+    const contract = contracts.find(c => c.id === id);
+    if (contract && confirm(t('Delete this contract?', 'حذف هذا العقد؟'))) {
+      try {
+        await firebase.firestore().collection('contracts').doc(id).delete();
+        contracts = contracts.filter(c => c.id !== id);
+        selectedRows.delete(id);
+        logAction(t('Delete','حذف'), `${contract.contract_no || contract.city}`);
+        toast(t('Contract deleted', 'تم حذف العقد'));
+        updateContractStatuses();
+        render();
+      } catch (error) {
         console.error('❌ خطأ:', error);
-        showToast('❌ خطأ في تسجيل الخروج');
+        toast(t('Error deleting contract','خطأ في حذف العقد'), 'error');
+      }
+    }
+  }
+
+  function restoreContract(id) {
+    const contract = contracts.find(c => c.id === id);
+    if(contract) {
+      contract.lease_end = '';
+      contract.proj_end_date = '';
+      contract.status = 'Renewed';
+      updateContractStatuses();
+      logAction(t('Restore','استرجاع'), contract.contract_no);
+      toast(t('Contract restored to active', 'تم استرجاع العقد للنشط'));
+      render();
+    }
+  }
+
+  // export
+  function exportCurrentView() {
+    let data = getFilteredContracts();
+    if(data.length === 0) { toast(t('No data to export','لا توجد بيانات'), 'warning'); return; }
+    const cols = allColumns.filter(c => !hiddenCols.includes(c.key));
+    const headers = cols.map(c => lang === 'en' ? c.labelEn : c.labelAr);
+    const rows = data.map(contract => cols.map(col => {
+      if(col.key === 'status') return computeStatus(contract);
+      return contract[col.key] || '';
+    }));
+    const csvRows = [headers.join(','), ...rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(','))];
+    const blob = new Blob([csvRows.join('\n')], {type:'text/csv'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `contracts_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    logAction(t('Export','تصدير'), `${data.length} contracts`);
+    toast(t('Export complete','اكتمل التصدير'));
+  }
+
+  // alerts logic
+  function getAlerts() {
+    const alerts = [];
+    contracts.forEach(c => {
+      const status = computeStatus(c);
+      if (status === 'Expiring Soon') alerts.push({type:'warning', title:`Expiring Soon: ${c.contract_no || c.city}`, desc:c.owner||'', date:c.lease_end || c.proj_end_date});
+      if (status === 'Expired') alerts.push({type:'danger', title:`Expired: ${c.contract_no || c.city}`, desc:c.owner||'', date:c.lease_end || c.proj_end_date});
+      if (!c.contract_link || c.contract_link.trim() === '') alerts.push({type:'info', title:`Missing Contract Link: ${c.contract_no}`, desc:'Upload document link'});
+    });
+    return alerts;
+  }
+
+  // analytics data
+  function getAnalyticsData() {
+    const activeContracts = contracts.filter(c => computeStatus(c) !== 'Expired');
+    const cityMap = new Map(); activeContracts.forEach(c => { if(c.city) cityMap.set(c.city, (cityMap.get(c.city)||0)+1); });
+    const statusMap = new Map(); contracts.forEach(c => { const s = computeStatus(c); statusMap.set(s, (statusMap.get(s)||0)+1); });
+    const cycleMap = new Map(); activeContracts.forEach(c => { if(c.payment_cycle) cycleMap.set(c.payment_cycle, (cycleMap.get(c.payment_cycle)||0)+1); });
+    const ownerMap = new Map(); activeContracts.forEach(c => { if(c.owner) ownerMap.set(c.owner, (ownerMap.get(c.owner)||0)+1); });
+    return { cityMap, statusMap, cycleMap, ownerMap: [...ownerMap.entries()].sort((a,b)=>b[1]-a[1]).slice(0,6) };
+  }
+
+  // render functions
+  function renderTable(contractList) {
+    const visibleCols = allColumns.filter(c => !hiddenCols.includes(c.key));
+    let sorted = [...contractList];
+    if(sortColumn) {
+      sorted.sort((a,b) => {
+        let valA = a[sortColumn] || '', valB = b[sortColumn] || '';
+        if(sortColumn === 'status') { valA = computeStatus(a); valB = computeStatus(b); }
+        return valA < valB ? -sortDirection : valA > valB ? sortDirection : 0;
       });
+    }
+    return `<div class="table-wrapper"><table class="contract-table"><thead><tr>
+      <th style="width:32px"><input type="checkbox" onchange="toggleSelectAll(this.checked)"></th>
+      ${visibleCols.map(c => `<th onclick="setSort('${c.key}')">${lang==='en'?c.labelEn:c.labelAr} ${sortColumn===c.key ? (sortDirection===1?'↑':'↓') : ''}</th>`).join('')}
+      <th>${t('Actions','إجراءات')}</th>
+    </tr></thead><tbody>
+      ${sorted.map(c => {
+        const status = computeStatus(c);
+        const statusClass = status==='Active'?'badge-green':status==='Expiring Soon'?'badge-amber':'badge-red';
+        const isSelected = selectedRows.has(c.id);
+        return `<tr style="background:${isSelected?'var(--accent-bg)':'transparent'}">
+          <td><input type="checkbox" ${isSelected?'checked':''} onchange="toggleSelectRow('${c.id}', this.checked)"></td>
+          ${visibleCols.map(col => {
+            if(col.key === 'status') return `<td><span class="badge-status ${statusClass}">${status}</span></td>`;
+            if(col.key === 'payment_cycle') return `<td><span style="background:var(--accent-bg);padding:2px 8px;border-radius:40px;">${c[col.key]||'—'}</span></td>`;
+            if(col.key === 'contract_link') return `<td>${c.contract_link ? `<a href="${c.contract_link}" target="_blank" style="color:var(--accent)"><i class="ti ti-external-link"></i> link</a>` : '—'}</td>`;
+            return `<td ondblclick="inlineEdit('${c.id}', '${col.key}')" style="cursor:text">${c[col.key] || '—'}</td>`;
+          }).join('')}
+          <td><div class="row-actions">
+            <button class="action-icon" onclick="inlineFullEdit('${c.id}')" title="${t('Edit','تعديل')}"><i class="ti ti-edit"></i></button>
+            ${currentTab === 'expired' ? `<button class="action-icon" onclick="restoreContract('${c.id}')"><i class="ti ti-refresh"></i></button>` : ''}
+            <button class="action-icon" onclick="deleteContractById('${c.id}')"><i class="ti ti-trash"></i></button>
+          </div></td>
+        </tr>`;
+      }).join('')}
+      ${sorted.length === 0 ? `<tr><td colspan="${visibleCols.length+2}" style="text-align:center;padding:40px;">${t('No contracts found. Add or import.','لا توجد عقود')}</td></tr>` : ''}
+    </tbody></table></div>`;
   }
-}
 
-// ===== STATUS LOGIC =====
-function daysLeft(endDate){
-  return Math.ceil((new Date(endDate) - NOW) / (1000*60*60*24));
-}
-
-function getStatus(c){
-  const d = daysLeft(c.endDate);
-  if(d < 0)   return 'expired';
-  if(d <= 30)  return 'expiring_red';
-  if(d <= 60)  return 'expiring_blue';
-  if(d <= 90)  return 'expiring';
-  return 'active';
-}
-
-function getRowClass(c){
-  const s = getStatus(c);
-  if(s==='expiring_red')  return 'row-red';
-  if(s==='expiring_blue') return 'row-blue';
-  if(s==='expiring')      return 'row-amber';
-  if(s==='expired')       return 'row-expired';
-  return 'row-ok';
-}
-
-function getProgress(c){
-  const start=new Date(c.startDate), end=new Date(c.endDate);
-  const total=end-start, elapsed=NOW-start;
-  return Math.min(100,Math.max(0,Math.round(elapsed/total*100)));
-}
-
-// ===== FORMATTING =====
-function formatDate(d){
-  if(!d) return '—';
-  return new Date(d).toLocaleDateString('ar-SA',{year:'numeric',month:'short',day:'numeric'});
-}
-function formatRent(n){ return n?n.toLocaleString('ar-SA'):'—'; }
-
-function statusBadge(s, c){
-  const d = daysLeft(c.endDate);
-  if(s==='active')         return '<span class="badge badge-active">● نشط</span>';
-  if(s==='expiring_red')   return `<span class="badge badge-expiring-red">🔴 ينتهي بعد ${d} يوم</span>`;
-  if(s==='expiring_blue')  return `<span class="badge badge-expiring-blue">🔵 ينتهي بعد ${d} يوم</span>`;
-  if(s==='expiring')       return `<span class="badge" style="background:#fff3dc;color:#854F0B">⚠ ينتهي بعد ${d} يوم</span>`;
-  return '<span class="badge badge-expired">✕ منتهي</span>';
-}
-
-function payBadge(p){
-  if(p==='شهري')      return '<span class="badge badge-monthly">📅 شهري</span>';
-  if(p==='ربع سنوي') return '<span class="badge badge-quarterly">📆 ربع سنوي</span>';
-  return '<span class="badge badge-annual">🗓 سنوي</span>';
-}
-
-function endDateCell(c){
-  const s = getStatus(c);
-  const formatted = formatDate(c.endDate);
-  if(s==='expiring_red')  return `<span class="date-red">⚠ ${formatted}</span>`;
-  if(s==='expiring_blue') return `<span class="date-blue">⏰ ${formatted}</span>`;
-  return `<span class="date-normal">${formatted}</span>`;
-}
-
-// ===== POPULATE CITY FILTER =====
-function populateCityFilter(){
-  const sel=document.getElementById('cityFilter');
-  while(sel.options.length>1) sel.remove(1);
-  [...new Set(contracts.map(c=>c.city))].forEach(c=>{
-    const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o);
-  });
-}
-
-// ===== STATS =====
-function updateStats(){
-  const active     = contracts.filter(c=>getStatus(c)==='active').length;
-  const red        = contracts.filter(c=>getStatus(c)==='expiring_red').length;
-  const blue       = contracts.filter(c=>getStatus(c)==='expiring_blue').length;
-  const expired    = contracts.filter(c=>getStatus(c)==='expired').length;
-  const totalRent  = contracts.reduce((a,c)=>a+(c.annualRent||0),0);
-  document.getElementById('statsBar').innerHTML=`
-    <div class="stat-card"><div class="stat-label">إجمالي العقود</div><div class="stat-value teal">${contracts.length}</div></div>
-    <div class="stat-card"><div class="stat-label">عقود نشطة</div><div class="stat-value teal">${active}</div></div>
-    <div class="stat-card"><div class="stat-label">🔴 تنبيه عاجل (&lt;شهر)</div><div class="stat-value red">${red}</div></div>
-    <div class="stat-card"><div class="stat-label">🔵 تنبيه مبكر (&lt;شهرين)</div><div class="stat-value blue">${blue}</div></div>
-    <div class="stat-card"><div class="stat-label">عقود منتهية</div><div class="stat-value amber">${expired}</div></div>
-    <div class="stat-card"><div class="stat-label">إجمالي الإيجارات السنوية</div><div class="stat-value orange">${totalRent.toLocaleString('ar-SA')} ﷼</div></div>
-  `;
-}
-
-// ===== FILTER & RENDER =====
-function filterContracts(){
-  const q        = document.getElementById('searchInput').value.toLowerCase();
-  const city     = document.getElementById('cityFilter').value;
-  const statusF  = document.getElementById('statusFilter').value;
-  const payF     = document.getElementById('paymentFilter').value;
-
-  filtered = contracts.filter(c=>{
-    const status = getStatus(c);
-    const searchMatch = !q || (c.city+c.camp+c.owner+c.contractNo+c.projectId+c.flat).toLowerCase().includes(q);
-    const cityMatch   = !city   || c.city===city;
-    const payMatch    = !payF   || c.paymentCycle===payF;
-    let statusMatch   = true;
-    if(statusF) statusMatch = status===statusF;
-    let tabMatch = true;
-    if(activeTab!=='all') tabMatch = status===activeTab;
-    return searchMatch && cityMatch && statusMatch && payMatch && tabMatch;
-  });
-
-  if(sortKey){
-    filtered.sort((a,b)=>{
-      let av=a[sortKey],bv=b[sortKey];
-      if(typeof av==='number') return (av-bv)*sortDir;
-      return String(av).localeCompare(String(bv),'ar')*sortDir;
-    });
+  // inline edit via double click (opens modal with field focus)
+  function inlineEdit(id, fieldKey) {
+    const contract = contracts.find(c => c.id === id);
+    if(!contract) return;
+    openContractModal(contract, fieldKey);
   }
-  renderTable();
-}
-
-function sortBy(key){
-  if(sortKey===key) sortDir*=-1; else{sortKey=key;sortDir=1;}
-  filterContracts();
-}
-
-function setTab(tab, btn){
-  activeTab=tab;
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('statusFilter').value='';
-  filterContracts();
-}
-
-function renderTable(){
-  const tbody  = document.getElementById('contractsTable');
-  const empty  = document.getElementById('emptyState');
-  document.getElementById('resultCount').textContent = filtered.length+' عقد';
-  if(!filtered.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
-  empty.style.display='none';
-  tbody.innerHTML = filtered.map(c=>{
-    const status   = getStatus(c);
-    const prog     = getProgress(c);
-    const progClass= prog>70?'prog-good':prog>40?'prog-warn':'prog-danger';
-    const rowClass = getRowClass(c);
-    return `<tr class="${rowClass}" onclick="showDetail('${c.id}')">
-      <td class="td-city">${c.city}</td>
-      <td>${c.camp}</td>
-      <td><span class="td-project">${c.projectId}</span></td>
-      <td title="${c.owner}">${c.owner}</td>
-      <td>ط${c.floor} / ${c.flat}</td>
-      <td>${c.rooms} غرف / ${c.residents} ساكن</td>
-      <td><span class="rent-amount">${formatRent(c.annualRent)}</span> <span class="rent-cur">﷼</span></td>
-      <td>${payBadge(c.paymentCycle)}</td>
-      <td>${formatDate(c.startDate)}</td>
-      <td>${endDateCell(c)}</td>
-      <td>${formatDate(c.nextPayment)}</td>
-      <td><div class="progress-wrap"><div class="progress-bar"><div class="progress-fill ${progClass}" style="width:${prog}%"></div></div><span class="progress-pct">${prog}%</span></div></td>
-      <td>${statusBadge(status,c)}</td>
-      <td>${c.contractLink?`<a class="contract-link" href="${c.contractLink}" target="_blank" onclick="event.stopPropagation()">🔗 عرض</a>`:'<span style="color:#aaa;font-size:11px">—</span>'}</td>
-      <td title="${c.notes||''}">${c.notes||'—'}</td>
-    </tr>`;
-  }).join('');
-}
-
-// ===== DETAIL PANEL =====
-function showDetail(id){
-  const c = contracts.find(x=>x.id===id);
-  if(!c) return;
-  const status = getStatus(c);
-  const d = daysLeft(c.endDate);
-  document.getElementById('detailTitle').textContent = c.contractNo||'عقد رقم '+id;
-  document.getElementById('detailBody').innerHTML=`
-    <div style="margin-bottom:16px">${statusBadge(status,c)}</div>
-    ${d>0&&d<=60?`<div style="background:${d<=30?'#fff5f5':'#f0f6ff'};border:1px solid ${d<=30?'#e24b4a':'#2979d4'};border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:${d<=30?'#a32d2d':'#1558b0'}">⚠ <strong>تنبيه:</strong> يتبقى على انتهاء هذا العقد ${d} يوم فقط</div>`:''}
-    <div class="detail-section">
-      <h4>بيانات الموقع</h4>
-      <div class="detail-row"><span class="detail-key">المدينة</span><span class="detail-val">${c.city}</span></div>
-      <div class="detail-row"><span class="detail-key">المخيم</span><span class="detail-val">${c.camp}</span></div>
-      <div class="detail-row"><span class="detail-key">رقم المشروع</span><span class="detail-val">${c.projectId}</span></div>
-      <div class="detail-row"><span class="detail-key">الطابق</span><span class="detail-val">${c.floor}</span></div>
-      <div class="detail-row"><span class="detail-key">رقم الشقة</span><span class="detail-val">${c.flat}</span></div>
-    </div>
-    <div class="detail-section">
-      <h4>بيانات التأجير</h4>
-      <div class="detail-row"><span class="detail-key">المالك / المؤجر</span><span class="detail-val">${c.owner}</span></div>
-      <div class="detail-row"><span class="detail-key">عدد الغرف</span><span class="detail-val">${c.rooms}</span></div>
-      <div class="detail-row"><span class="detail-key">عدد السكان</span><span class="detail-val">${c.residents}</span></div>
-      <div class="detail-row"><span class="detail-key">توزيع الغرف</span><span class="detail-val">${c.distribution||'—'}</span></div>
-    </div>
-    <div class="detail-section">
-      <h4>بيانات مالية</h4>
-      <div class="detail-row"><span class="detail-key">الإيجار السنوي</span><span class="detail-val">${formatRent(c.annualRent)} ﷼</span></div>
-      <div class="detail-row"><span class="detail-key">دورة الدفع</span><span class="detail-val">${c.paymentCycle}</span></div>
-    </div>
-    <div class="detail-section">
-      <h4>مدة العقد</h4>
-      <div class="detail-row"><span class="detail-key">تاريخ البداية</span><span class="detail-val">${formatDate(c.startDate)}</span></div>
-      <div class="detail-row"><span class="detail-key">تاريخ النهاية</span><span class="detail-val" style="color:${d<=30&&d>=0?'#a32d2d':d<=60&&d>=0?'#1558b0':'inherit'}">${formatDate(c.endDate)}</span></div>
-      <div class="detail-row"><span class="detail-key">الدفعة القادمة</span><span class="detail-val">${formatDate(c.nextPayment)}</span></div>
-      <div class="detail-row"><span class="detail-key">نهاية المشروع</span><span class="detail-val">${formatDate(c.projEndDate)}</span></div>
-    </div>
-    <div class="detail-section">
-      <h4>معلومات العقد</h4>
-      <div class="detail-row"><span class="detail-key">رقم العقد</span><span class="detail-val">${c.contractNo||'—'}</span></div>
-      ${c.contractLink?`<div class="detail-row"><span class="detail-key">رابط العقد</span><a class="contract-link" href="${c.contractLink}" target="_blank">🔗 عرض العقد</a></div>`:''}
-    </div>
-    ${c.notes?`<div class="detail-section"><h4>ملاحظات</h4><p style="font-size:13px;color:#5a7a70;line-height:1.8">${c.notes}</p></div>`:''}
-  `;
-  document.getElementById('detailPanel').classList.add('open');
-}
-function closeDetail(){ document.getElementById('detailPanel').classList.remove('open'); }
-
-// ===== MODAL =====
-function openModal(){ document.getElementById('addModal').classList.add('open'); }
-function closeModal(){ document.getElementById('addModal').classList.remove('open'); }
-
-async function saveContract(){
-  const city = document.getElementById('f_city').value.trim();
-  const owner= document.getElementById('f_owner').value.trim();
-  const rent = +document.getElementById('f_rent').value;
-  const start= document.getElementById('f_start').value;
-  const end  = document.getElementById('f_end').value;
-  if(!city||!owner||!start||!end){ showToast('⚠ يرجى ملء الحقول الإلزامية'); return; }
   
-  const c={
-    city, camp:document.getElementById('f_camp').value||'',
-    projectId:document.getElementById('f_project').value||'',
-    owner, floor:document.getElementById('f_floor').value||'',
-    flat:document.getElementById('f_flat').value||'',
-    rooms:+document.getElementById('f_rooms').value||0,
-    residents:+document.getElementById('f_residents').value||0,
-    distribution:document.getElementById('f_dist').value||'',
-    paymentCycle:document.getElementById('f_payment').value,
-    annualRent:rent, startDate:start, endDate:end,
-    nextPayment:document.getElementById('f_nextPay').value||'',
-    contractNo:document.getElementById('f_contractNo').value||'',
-    contractLink:document.getElementById('f_link').value||'',
-    notes:document.getElementById('f_notes').value||'',
-    projEndDate:document.getElementById('f_projEnd').value||'',
-    createdAt:new Date().toISOString()
+  window.inlineFullEdit = function(id) { openContractModal(contracts.find(c=>c.id===id), null); };
+
+  function openContractModal(contract = null, focusField = null) {
+    const isEdit = !!contract;
+    const data = contract || {};
+    const fieldsHtml = allColumns.map(col => {
+      if (col.key === 'status') return '';
+      let value = data[col.key] || '';
+      if (col.key === 'payment_cycle') {
+        return `<div class="form-group"><label>${lang==='en'?col.labelEn:col.labelAr}</label><select id="field_${col.key}">
+          <option value="">—</option>${PAYMENT_CYCLES.map(opt => `<option ${value===opt?'selected':''} value="${opt}">${opt}</option>`).join('')}
+        </select></div>`;
+      }
+      return `<div class="form-group"><label>${lang==='en'?col.labelEn:col.labelAr}</label><input type="text" id="field_${col.key}" value="${String(value).replace(/"/g, '&quot;')}"></div>`;
+    }).join('');
+    const modalHtml = `<div class="modal-overlay" id="dynamicModal"><div class="modal">
+      <div class="modal-header"><h3>${isEdit ? t('Edit Contract','تعديل العقد') : t('Add Contract','إضافة عقد')}</h3><button class="btn" onclick="closeModal()" style="padding:4px 8px;">✕</button></div>
+      <div class="form-grid" style="max-height:60vh;overflow-y:auto;">${fieldsHtml}</div>
+      <div class="modal-footer"><button class="btn" onclick="closeModal()">${t('Cancel','إلغاء')}</button>
+      <button class="btn btn-primary" onclick="submitContractForm('${isEdit?data.id:''}')">${t('Save','حفظ')}</button></div>
+    </div></div>`;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    if(focusField && document.getElementById(`field_${focusField}`)) document.getElementById(`field_${focusField}`).focus();
+  }
+
+  window.submitContractForm = async function(editId) {
+    const formData = {};
+    for(let col of allColumns) {
+      if(col.key === 'status') continue;
+      const el = document.getElementById(`field_${col.key}`);
+      if(el) formData[col.key] = el.value.trim();
+    }
+    if(await saveContractData(formData, editId || null)) closeModal();
   };
-  
-  try {
-    // Save to Firestore
-    await firebase.firestore().collection('contracts').add(c);
-    
-    // Add to local array
-    contracts.push({id:Date.now(),...c});
-    closeModal();
-    
-    // Reset fields
-    ['f_city','f_camp','f_project','f_owner','f_floor','f_flat','f_rooms','f_residents',
-     'f_dist','f_rent','f_start','f_end','f_nextPay','f_contractNo','f_link','f_projEnd','f_notes']
-      .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-    
-    populateCityFilter();
-    updateStats();
-    filterContracts();
-    showToast('✅ تم إضافة العقد بنجاح');
-  } catch (error) {
-    console.error('❌ خطأ:', error);
-    showToast('❌ خطأ في حفظ العقد');
+
+  window.closeModal = function() { const modal = document.getElementById('dynamicModal'); if(modal) modal.remove(); };
+
+  // import excel/csv
+  window.triggerImport = function() {
+    const fileInput = document.createElement('input'); fileInput.type = 'file'; fileInput.accept = '.xlsx,.xls,.csv';
+    fileInput.onchange = async (e) => {
+      const file = e.target.files[0]; if(!file) return;
+      let dataRows = [];
+      if(file.name.endsWith('.csv')) {
+        const text = await file.text();
+        const lines = text.split('\n').filter(l=>l.trim());
+        if(lines.length<2) return toast('Empty CSV','error');
+        const headers = lines[0].split(',').map(h=>h.trim().replace(/"/g,''));
+        dataRows = lines.slice(1).map(l=>{ let vals=l.split(',').map(v=>v.trim().replace(/"/g,'')); let obj={}; headers.forEach((h,i)=>obj[h]=vals[i]); return obj; });
+      } else {
+        const ab = await file.arrayBuffer();
+        const wb = XLSX.read(ab);
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        dataRows = XLSX.utils.sheet_to_json(ws, {defval:''});
+      }
+      if(dataRows.length) showImportPreview(dataRows);
+    };
+    fileInput.click();
+  };
+
+  function showImportPreview(rows) {
+    const colMap = { 'city':'city','camp':'camp','project id':'project_id','project_id':'project_id','owner':'owner','floor':'floor','flat':'flat','rooms':'rooms','residents':'residents','distribution':'room_dist','payment cycle':'payment_cycle','start of lease':'lease_start','end of lease':'lease_end','next payment':'next_payment','contract no':'contract_no','contract link':'contract_link','notes':'notes','proj end date':'proj_end_date'};
+    const sample = rows.slice(0,3);
+    const previewHtml = `<div class="modal-overlay" id="importModal"><div class="modal" style="max-width:860px"><div class="modal-header"><h3>${t('Import Preview','معاينة الاستيراد')}</h3><button onclick="closeModal()">✕</button></div>
+    <div style="padding:20px"><p>${rows.length} ${t('records found','سجل موجود')}</p>
+    <div class="import-preview-box"><table style="font-size:11px">${sample.map(r=>`<tr>${Object.values(r).slice(0,5).map(v=>`<td style="padding:4px">${v}</td>`).join('')}</tr>`).join('')}</table></div>
+    <div class="modal-footer" style="margin-top:16px"><button class="btn" onclick="closeModal()">${t('Cancel','إلغاء')}</button>
+    <button class="btn btn-primary" onclick="processImportData(${JSON.stringify(rows).replace(/"/g, '&quot;')})">${t('Process & Import Data','معالجة واستيراد')}</button></div></div></div></div>`;
+    document.body.insertAdjacentHTML('beforeend', previewHtml);
+    window.processImportData = async function(importRows) {
+      let added = 0, skipped = 0;
+      for(let r of importRows) {
+        let obj = { id: Date.now().toString() + Math.random() };
+        for(let [key, val] of Object.entries(r)) {
+          const lowerKey = key.trim().toLowerCase();
+          const mapped = colMap[lowerKey] || (colMap[key]?colMap[key]:null);
+          if(mapped) obj[mapped] = String(val).trim();
+        }
+        if(obj.contract_no && contracts.find(c=>c.contract_no === obj.contract_no)) { skipped++; continue; }
+        try {
+          await firebase.firestore().collection('contracts').doc(obj.id).set(obj);
+          contracts.push(obj);
+          added++;
+        } catch (error) {
+          console.error('Error saving contract:', error);
+          skipped++;
+        }
+      }
+      updateContractStatuses();
+      logAction(t('Excel Import','استيراد اكسل'), `${added} added, ${skipped} skipped`);
+      toast(t('Import successful','تم الاستيراد بنجاح'));
+      closeModal();
+      render();
+    };
   }
-}
 
-// ===== TOAST =====
-function showToast(msg){
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),3000);
-}
+  // render main
+  function render() {
+    updateContractStatuses();
+    const filtered = getFilteredContracts();
+    const activeCount = contracts.filter(c=>computeStatus(c)!=='Expired').length;
+    const expiredCount = contracts.filter(c=>computeStatus(c)==='Expired').length;
+    const expiringSoon = contracts.filter(c=>computeStatus(c)==='Expiring Soon').length;
+    const alerts = getAlerts();
+    let mainHtml = '';
+    if(currentTab === 'active' || currentTab === 'expired') {
+      const statsBar = `<div class="stats-grid"><div class="stat-card"><div class="stat-label">${t('Total Contracts','إجمالي العقود')}</div><div class="stat-value">${contracts.length}</div></div>
+      <div class="stat-card"><div class="stat-label">${t('Active','نشط')}</div><div class="stat-value">${activeCount}</div></div>
+      <div class="stat-card"><div class="stat-label">${t('Expiring Soon','تنتهي قريباً')}</div><div class="stat-value">${expiringSoon}</div></div>
+      <div class="stat-card"><div class="stat-label">${t('Expired','منتهية')}</div><div class="stat-value">${expiredCount}</div></div></div>`;
+      const toolbar = `<div class="toolbar"><div class="search-box"><i class="ti ti-search"></i><input placeholder="${t('Search...','بحث...')}" oninput="searchText=this.value;render()" value="${searchText}"></div>
+      <select onchange="filterCity=this.value;render()"><option value="">${t('All Cities','كل المدن')}</option>${[...new Set(contracts.map(c=>c.city).filter(Boolean))].map(city=>`<option value="${city}">${city}</option>`)}</select>
+      <select onchange="filterStatus=this.value;render()"><option value="">${t('All Statuses','كل الحالات')}</option>${STATUS_LIST.map(s=>`<option value="${s}">${s}</option>`)}</select>
+      <select onchange="filterCycle=this.value;render()"><option value="">${t('All Cycles','كل الدورات')}</option>${PAYMENT_CYCLES.map(c=>`<option>${c}</option>`)}</select>
+      <button class="btn" onclick="openContractModal()"><i class="ti ti-plus"></i>${t('Add Contract','إضافة عقد')}</button>
+      <button class="btn" onclick="triggerImport()"><i class="ti ti-upload"></i>${t('Import','استيراد')}</button>
+      <button class="btn" onclick="exportCurrentView()"><i class="ti ti-download"></i>${t('Export','تصدير')}</button>
+      <button class="btn" onclick="toggleColumnPanel()"><i class="ti ti-columns"></i>${t('Columns','أعمدة')}</button>
+      ${selectedRows.size ? `<button class="btn" style="color:var(--red)" onclick="deleteSelectedRows()"><i class="ti ti-trash"></i>${t('Delete Selected','حذف المحدد')} (${selectedRows.size})</button>` : ''}
+      </div>`;
+      mainHtml = statsBar + toolbar + renderTable(filtered);
+    } else if(currentTab === 'analytics') {
+      const { cityMap, statusMap, cycleMap, ownerMap } = getAnalyticsData();
+      const maxCity = Math.max(...Array.from(cityMap.values()),1);
+      mainHtml = `<div class="analytics-grid"><h4 style="margin-bottom:16px">${t('Analytics Dashboard','لوحة التحليلات')}</h4>
+        <div class="stats-grid" style="grid-template-columns:1fr 1fr; gap:24px;"><div><strong>${t('By City','حسب المدينة')}</strong>${Array.from(cityMap.entries()).map(([k,v])=>`<div class="bar-row"><span style="width:80px">${k}</span><div style="flex:1;background:#e9e5da;border-radius:20px;"><div class="bar-fill" style="width:${(v/maxCity)*100}%;background:var(--accent);">${v}</div></div></div>`).join('')||'—'}</div>
+        <div><strong>${t('By Status','حسب الحالة')}</strong>${Array.from(statusMap.entries()).map(([k,v])=>`<div>${k}: ${v}</div>`).join('')}</div>
+        <div><strong>${t('Payment Cycles','دورات الدفع')}</strong>${Array.from(cycleMap.entries()).map(([k,v])=>`<div>${k}: ${v}</div>`).join('')}</div>
+        <div><strong>${t('Top Owners','أبرز الملاك')}</strong>${ownerMap.map(([k,v])=>`<div>${k}: ${v}</div>`).join('')||'—'}</div>
+      </div></div>`;
+    } else if(currentTab === 'alerts') {
+      mainHtml = `<div class="alerts-container"><h4>${t('Alerts & Notifications','تنبيهات')}</h4>${alerts.map(a=>`<div class="alert-item"><i class="ti ${a.type==='warning'?'ti-alert-triangle':a.type==='danger'?'ti-alert-circle':'ti-info-circle'}" style="color:${a.type==='danger'?'var(--red)':'var(--amber)'}"></i><div><strong>${a.title}</strong><div>${a.desc||''}</div></div></div>`).join('')||'<div class="alert-item">✨ No alerts</div>'}</div>`;
+    } else if(currentTab === 'log') {
+      mainHtml = `<div class="alerts-container"><h4>${t('Activity Log','سجل النشاطات')}</h4>${activityLog.slice(0,50).map(l=>`<div class="alert-item"><i class="ti ti-history"></i><div><strong>${l.action}</strong><div style="font-size:11px">${l.detail} — ${l.time}</div></div></div>`).join('')||'<div>No activities yet</div>'}</div>`;
+    }
 
-// ===== EXPORT EXCEL =====
-function exportExcel(){
-  if(!filtered.length){ showToast('⚠ لا توجد بيانات للتصدير'); return; }
-  const headers=['المدينة','المخيم','رقم المشروع','المالك / المؤجر','الطابق','الشقة','عدد الغرف','عدد السكان','توزيع الغرف','دورة الدفع','الإيجار السنوي (ريال)','بداية العقد','نهاية العقد','الدفعة القادمة','رقم العقد','رابط العقد','ملاحظات','نهاية المشروع','الحالة'];
-  const rows = filtered.map(c=>[
-    c.city,c.camp,c.projectId,c.owner,c.floor,c.flat,c.rooms,c.residents,
-    c.distribution,c.paymentCycle,c.annualRent,
-    c.startDate,c.endDate,c.nextPayment,c.contractNo,c.contractLink,c.notes,c.projEndDate,
-    {expired:'منتهي',expiring_red:'ينتهي خلال أقل من شهر',expiring_blue:'ينتهي خلال شهرين',expiring:'ينتهي خلال 3 أشهر',active:'نشط'}[getStatus(c)]
-  ]);
+    const userDisplay = currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'User';
 
-  const ws = XLSX.utils.aoa_to_sheet([headers,...rows]);
-  ws['!cols'] = headers.map((_,i)=>({wch:[12,14,14,20,8,8,10,10,12,12,18,14,14,14,14,30,20,14,16][i]||14}));
+    document.getElementById('app').innerHTML = `
+      <div class="header"><div class="logo-area"><img class="logo-img" src="https://pbs.twimg.com/profile_images/1812360429827424257/MHJiLbCy_400x400.jpg" alt="logo"><div class="brand"><h1>${t('Contract Management System','نظام إدارة العقود')}</h1><p>${t('Residential & Administrative','سكني وإداري')}</p></div></div><div class="header-actions"><div class="user-info">👤 ${userDisplay}</div><button class="btn lang-btn" onclick="toggleLang()">${lang==='en'?'عربي':'English'}</button><button class="btn" onclick="switchTab('alerts')"><i class="ti ti-bell"></i>${alerts.length}</button><button class="btn btn-logout" onclick="logoutUser()"><i class="ti ti-logout"></i>${t('Logout','خروج')}</button></div></div>
+      <div class="nav-tabs">${['active','expired','analytics','alerts','log'].map(tab => `<div class="nav-tab ${currentTab===tab?'active':''}" onclick="switchTab('${tab}')"><i class="ti ${tab==='active'?'ti-file-check':tab==='expired'?'ti-file-x':tab==='analytics'?'ti-chart-bar':tab==='alerts'?'ti-bell':'ti-history'}"></i>${t(tab==='active'?'Active Contracts':'Expired Contracts','العقود النشطة')} ${(tab==='active'?activeCount:tab==='expired'?expiredCount:'') ? `<span class="badge">${tab==='active'?activeCount:expiredCount}</span>` : ''}</div>`).join('')}</div>
+      ${mainHtml}
+    `;
+  }
 
-  filtered.forEach((c,ri)=>{
-    const s=getStatus(c);
-    const fill = s==='expiring_red'?'FFFDE8E8':s==='expiring_blue'?'FFE8F0FF':s==='expiring'?'FFFFF3DC':s==='expired'?'FFF5E8E8':null;
-    if(!fill) return;
-    headers.forEach((_,ci)=>{
-      const addr=XLSX.utils.encode_cell({r:ri+1,c:ci});
-      if(!ws[addr]) ws[addr]={t:'s',v:''};
-      ws[addr].s={fill:{fgColor:{rgb:fill}}};
-    });
-  });
+  window.toggleLang = () => { lang = lang === 'en' ? 'ar' : 'en'; render(); };
+  window.switchTab = (tab) => { currentTab = tab; filterCity=''; filterStatus=''; filterCycle=''; searchText=''; selectedRows.clear(); sortColumn='lease_end'; sortDirection=1; render(); };
+  window.setSort = (col) => { if(sortColumn===col) sortDirection*=-1; else { sortColumn=col; sortDirection=1; } render(); };
+  window.toggleSelectRow = (id, checked) => { if(checked) selectedRows.add(id); else selectedRows.delete(id); render(); };
+  window.toggleSelectAll = (checked) => { getFilteredContracts().forEach(c => { if(checked) selectedRows.add(c.id); else selectedRows.delete(c.id); }); render(); };
+  window.deleteSelectedRows = () => { if(selectedRows.size) { contracts = contracts.filter(c => !selectedRows.has(c.id)); selectedRows.clear(); updateContractStatuses(); logAction('Bulk delete','multiple'); toast('Selected deleted'); render(); } };
+  window.toggleColumnPanel = () => { const cols = allColumns.filter(c=>c.key!=='status'); const newHidden = []; if(hiddenCols.length) newHidden.push(...hiddenCols); const msg = prompt('Toggle columns (type column keys separated by comma to hide: city,owner...)', hiddenCols.join(',')); if(msg !== null) { const toHide = msg.split(',').map(s=>s.trim()); hiddenCols = allColumns.filter(c=>toHide.includes(c.key)).map(c=>c.key); render(); } };
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'العقود');
+  // Window global functions
+  window.openContractModal = openContractModal;
+  window.inlineEdit = inlineEdit;
 
-  const summaryData=[
-    ['إجمالي العقود', contracts.length],
-    ['عقود نشطة', contracts.filter(c=>getStatus(c)==='active').length],
-    ['تنبيه عاجل (أقل من شهر)', contracts.filter(c=>getStatus(c)==='expiring_red').length],
-    ['تنبيه (أقل من شهرين)', contracts.filter(c=>getStatus(c)==='expiring_blue').length],
-    ['ينتهي خلال 3 أشهر', contracts.filter(c=>getStatus(c)==='expiring').length],
-    ['عقود منتهية', contracts.filter(c=>getStatus(c)==='expired').length],
-    ['إجمالي الإيجارات السنوية', contracts.reduce((a,c)=>a+(c.annualRent||0),0)],
-    ['تاريخ التصدير', new Date().toLocaleDateString('ar-SA')],
-  ];
-  const ws2=XLSX.utils.aoa_to_sheet([['البيان','القيمة'],...summaryData]);
-  ws2['!cols']=[{wch:30},{wch:20}];
-  XLSX.utils.book_append_sheet(wb,ws2,'ملخص');
-
-  const today=new Date().toISOString().slice(0,10);
-  XLSX.writeFile(wb,`عقود_${today}.xlsx`);
-  showToast('✅ تم تصدير ملف Excel بنجاح');
-}
-
-// ===== EXPORT PDF (Print) =====
-function exportPDF(){ window.print(); }
-
-// ===== INIT =====
-console.log('✅ نظام إدارة العقود جاهز');
+  // initial empty state (will load from Firebase)
+  contracts = [];
+  updateContractStatuses();
 </script>
 </body>
 </html>
