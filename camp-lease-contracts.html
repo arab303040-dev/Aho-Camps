@@ -1120,6 +1120,13 @@
       }
     }
 
+  // Window global functions
+  window.openContractModal = openContractModal;
+  window.inlineEdit = inlineEdit;
+
+  // initial empty state (will load from Firebase)
+  contracts = [];
+  updateContractStatuses();
     // ============================================
     // TOAST NOTIFICATION
     // ============================================
