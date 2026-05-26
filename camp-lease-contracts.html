@@ -1,979 +1,1137 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-<title>نظام إدارة العقود | AHO</title>
-<!-- Fonts & Icons -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
-<!-- SheetJS for Excel import -->
-<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-<style>
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>نظام إدارة العقود | Aho Camps</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
-  :root {
-    --bg-body: #fefcf5;
-    --bg-surface: #ffffff;
-    --bg-card: #ffffff;
-    --bg-side: #f9f7f0;
-    --border-light: #e9e5da;
-    --border-med: #ddd6c8;
-    --text-primary: #2c2a24;
-    --text-secondary: #6b6256;
-    --text-muted: #9b927e;
-    --accent: #c27e3a;
-    --accent-light: #e5d5bd;
-    --accent-bg: rgba(194, 126, 58, 0.08);
-    --green: #2b7a3e;
-    --green-bg: rgba(43, 122, 62, 0.1);
-    --amber: #b45f1b;
-    --amber-bg: rgba(180, 95, 27, 0.1);
-    --red: #bc4a2c;
-    --red-bg: rgba(188, 74, 44, 0.08);
-    --purple: #8a6e4b;
-    --purple-bg: rgba(138, 110, 75, 0.1);
-    --teal: #3a7b6e;
-    --radius-sm: 8px;
-    --radius-md: 14px;
-    --radius-lg: 20px;
-    --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.03);
-    --shadow-md: 0 8px 20px rgba(0, 0, 0, 0.03), 0 2px 4px rgba(0, 0, 0, 0.02);
-  }
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-  body {
-    background: var(--bg-body);
-    color: var(--text-primary);
-    font-family: 'Inter', sans-serif;
-    font-size: 13px;
-    line-height: 1.45;
-  }
+    :root {
+      --bg-body: #fefcf5;
+      --bg-surface: #ffffff;
+      --bg-card: #ffffff;
+      --bg-side: #f9f7f0;
+      --border-light: #e9e5da;
+      --border-med: #ddd6c8;
+      --text-primary: #2c2a24;
+      --text-secondary: #6b6256;
+      --text-muted: #9b927e;
+      --accent: #c27e3a;
+      --accent-light: #e5d5bd;
+      --accent-bg: rgba(194, 126, 58, 0.08);
+      --green: #2b7a3e;
+      --green-bg: rgba(43, 122, 62, 0.1);
+      --amber: #b45f1b;
+      --amber-bg: rgba(180, 95, 27, 0.1);
+      --red: #bc4a2c;
+      --red-bg: rgba(188, 74, 44, 0.08);
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.03);
+      --shadow-md: 0 8px 20px rgba(0, 0, 0, 0.03), 0 2px 4px rgba(0, 0, 0, 0.02);
+    }
 
-  #loadingScreen {
-    position: fixed;
-    inset: 0;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    z-index: 50;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    opacity: 1;
-    transition: opacity 0.3s;
-  }
+    body {
+      background: var(--bg-body);
+      color: var(--text-primary);
+      font-family: 'Cairo', sans-serif;
+      font-size: 13px;
+      line-height: 1.45;
+    }
 
-  #loadingScreen.hidden {
-    opacity: 0;
-    pointer-events: none;
-  }
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg-body);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      flex-direction: column;
+      gap: 20px;
+    }
 
-  .loading {
-    display: inline-block;
-    width: 40px;
-    height: 40px;
-    border: 4px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top-color: white;
-    animation: spin 1s ease-in-out infinite;
-  }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid var(--border-light);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
 
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
 
-  .app {
-    max-width: 1600px;
-    margin: 0 auto;
-    padding: 0 16px 24px;
-  }
+    .app {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 0 16px 24px;
+    }
 
-  /* header */
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 0 20px;
-    flex-wrap: wrap;
-    gap: 12px;
-    border-bottom: 1px solid var(--border-light);
-    margin-bottom: 20px;
-  }
-  .logo-area {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-  .logo-img {
-    width: 48px;
-    height: 48px;
-    border-radius: 60px;
-    object-fit: cover;
-    border: 2px solid var(--accent-light);
-    background: white;
-  }
-  .brand h1 {
-    font-size: 1.35rem;
-    font-weight: 600;
-    letter-spacing: -0.3px;
-    color: var(--text-primary);
-  }
-  .brand p {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-    margin-top: 2px;
-  }
-  .header-actions {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-  }
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 14px;
-    border-radius: 40px;
-    font-weight: 500;
-    font-size: 0.8rem;
-    border: 1px solid var(--border-med);
-    background: white;
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-family: inherit;
-    background: var(--bg-surface);
-  }
-  .btn i { font-size: 1.1rem; }
-  .btn:hover {
-    background: var(--bg-side);
-    border-color: var(--accent);
-    transform: translateY(-1px);
-  }
-  .btn-primary {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: white;
-  }
-  .btn-primary:hover {
-    background: #b0692c;
-    border-color: #b0692c;
-  }
-  .lang-btn {
-    background: var(--accent-bg);
-    border-color: var(--accent-light);
-  }
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 0 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+      border-bottom: 1px solid var(--border-light);
+      margin-bottom: 20px;
+    }
 
-  /* tabs */
-  .nav-tabs {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    margin-bottom: 24px;
-    border-bottom: 1px solid var(--border-light);
-    padding-bottom: 6px;
-  }
-  .nav-tab {
-    padding: 10px 20px;
-    border-radius: 40px;
-    font-weight: 500;
-    cursor: pointer;
-    background: transparent;
-    color: var(--text-secondary);
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .nav-tab i { font-size: 1.1rem; }
-  .nav-tab.active {
-    background: var(--bg-surface);
-    color: var(--accent);
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--border-light);
-  }
-  .badge {
-    background: var(--accent-bg);
-    padding: 2px 8px;
-    border-radius: 30px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: var(--accent);
-  }
-  .badge.expired { background: var(--red-bg); color: var(--red); }
-  .badge.alert { background: var(--amber-bg); color: var(--amber); }
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
 
-  /* stats row */
-  .stats-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 24px;
-  }
-  .stat-card {
-    background: var(--bg-surface);
-    border-radius: var(--radius-lg);
-    padding: 12px 20px;
-    flex: 1 1 160px;
-    border: 1px solid var(--border-light);
-    box-shadow: var(--shadow-sm);
-  }
-  .stat-label {
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--text-muted);
-  }
-  .stat-value {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    line-height: 1.2;
-  }
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: var(--accent-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
 
-  /* toolbar */
-  .toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
-    margin-bottom: 20px;
-    background: var(--bg-surface);
-    padding: 12px 16px;
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border-light);
-  }
-  .search-box {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--bg-body);
-    padding: 6px 12px;
-    border-radius: 40px;
-    border: 1px solid var(--border-med);
-    flex: 1 1 220px;
-  }
-  .search-box input {
-    background: none;
-    border: none;
-    outline: none;
-    flex: 1;
-    font-size: 0.8rem;
-  }
-  select, .filter-select {
-    background: var(--bg-body);
-    border: 1px solid var(--border-med);
-    padding: 7px 28px 7px 12px;
-    border-radius: 30px;
-    font-size: 0.75rem;
-    color: var(--text-primary);
-    cursor: pointer;
-    font-family: inherit;
-  }
-  .relative { position: relative; }
+    .brand h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: var(--text-primary);
+    }
 
-  /* table */
-  .table-wrapper {
-    background: var(--bg-surface);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border-light);
-    overflow-x: auto;
-    box-shadow: var(--shadow-sm);
-  }
-  .contract-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.75rem;
-    min-width: 1000px;
-  }
-  .contract-table th {
-    text-align: left;
-    padding: 14px 10px;
-    background: var(--bg-side);
-    color: var(--text-secondary);
-    font-weight: 600;
-    border-bottom: 1px solid var(--border-light);
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  .contract-table td {
-    padding: 12px 10px;
-    border-bottom: 1px solid var(--border-light);
-    vertical-align: middle;
-  }
-  .contract-table tr:hover td {
-    background: var(--accent-bg);
-  }
-  .badge-status {
-    display: inline-block;
-    padding: 4px 10px;
-    border-radius: 40px;
-    font-size: 0.7rem;
-    font-weight: 600;
-  }
-  .badge-green { background: var(--green-bg); color: var(--green); }
-  .badge-amber { background: var(--amber-bg); color: var(--amber); }
-  .badge-red { background: var(--red-bg); color: var(--red); }
-  .badge-blue { background: var(--accent-bg); color: var(--accent); }
-  .row-actions {
-    display: flex;
-    gap: 6px;
-    opacity: 0.5;
-    transition: opacity 0.15s;
-  }
-  tr:hover .row-actions { opacity: 1; }
-  .action-icon {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 1rem;
-    color: var(--text-secondary);
-    padding: 4px;
-    border-radius: 30px;
-  }
-  .action-icon:hover { background: var(--border-light); color: var(--accent); }
+    .brand p {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
 
-  /* modal */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.4);
-    backdrop-filter: blur(2px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-  }
-  .modal {
-    background: var(--bg-surface);
-    width: 90%;
-    max-width: 780px;
-    max-height: 85vh;
-    border-radius: 28px;
-    box-shadow: var(--shadow-md);
-    overflow-y: auto;
-    border: 1px solid var(--border-light);
-  }
-  .modal-header, .modal-footer {
-    padding: 16px 22px;
-    border-bottom: 1px solid var(--border-light);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .modal-footer {
-    border-top: 1px solid var(--border-light);
-    border-bottom: none;
-    justify-content: flex-end;
-    gap: 10px;
-  }
-  .form-grid {
-    display: grid;
-    grid-template-columns: repeat(2,1fr);
-    gap: 16px;
-    padding: 20px 22px;
-  }
-  .full-width { grid-column: span 2; }
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-  .form-group label {
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-  }
-  .form-group input, .form-group select, .form-group textarea {
-    background: var(--bg-body);
-    border: 1px solid var(--border-med);
-    border-radius: 14px;
-    padding: 8px 12px;
-    font-family: inherit;
-    font-size: 0.8rem;
-    outline: none;
-  }
-  .form-group input:focus, .form-group select:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px rgba(194,126,58,0.2);
-  }
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
 
-  /* import preview */
-  .upload-zone {
-    border: 2px dashed var(--border-med);
-    border-radius: 24px;
-    padding: 30px;
-    text-align: center;
-    cursor: pointer;
-    background: var(--bg-side);
-  }
-  .import-preview-box {
-    background: var(--bg-side);
-    border-radius: 20px;
-    padding: 14px;
-    margin-top: 18px;
-    font-size: 0.7rem;
-    max-height: 280px;
-    overflow: auto;
-  }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 14px;
+      background: var(--bg-side);
+      border-radius: 40px;
+      border: 1px solid var(--border-light);
+    }
 
-  /* alerts and analytics */
-  .alerts-container, .analytics-grid {
-    background: var(--bg-surface);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border-light);
-    padding: 16px;
-  }
-  .alert-item {
-    display: flex;
-    gap: 14px;
-    padding: 14px 0;
-    border-bottom: 1px solid var(--border-light);
-    align-items: center;
-  }
-  .bar-chart .bar-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin: 8px 0;
-  }
-  .bar-fill {
-    background: var(--accent);
-    height: 28px;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    padding-left: 8px;
-    color: white;
-    font-weight: 600;
-    font-size: 0.7rem;
-  }
-  .toast-container {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 1100;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .toast {
-    background: white;
-    border-left: 5px solid var(--green);
-    padding: 12px 18px;
-    border-radius: 60px;
-    box-shadow: 0 6px 16px rgba(0,0,0,0.05);
-    font-size: 0.8rem;
-    font-weight: 500;
-  }
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+    }
 
-  .user-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--accent-bg);
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-size: 0.8rem;
-    font-weight: 600;
-  }
+    .user-details {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
 
-  .btn-logout {
-    background: var(--red-bg);
-    border-color: var(--red);
-    color: var(--red);
-  }
+    .user-name {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
 
-  .btn-logout:hover {
-    background: var(--red);
-    color: white;
-  }
-</style>
+    .user-email {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 40px;
+      font-weight: 500;
+      font-size: 0.8rem;
+      border: 1px solid var(--border-med);
+      background: white;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .btn:hover {
+      background: var(--bg-side);
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #b0692c;
+    }
+
+    .btn-danger {
+      background: var(--red);
+      border-color: var(--red);
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #a33d25;
+    }
+
+    /* Stats */
+    .stats-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--bg-surface);
+      border-radius: var(--radius-lg);
+      padding: 12px 20px;
+      flex: 1 1 160px;
+      border: 1px solid var(--border-light);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+    }
+
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.2;
+    }
+
+    /* Tabs */
+    .nav-tabs {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border-light);
+      padding-bottom: 6px;
+    }
+
+    .nav-tab {
+      padding: 10px 20px;
+      border-radius: 40px;
+      font-weight: 500;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text-secondary);
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+      font-family: inherit;
+      font-size: 0.9rem;
+    }
+
+    .nav-tab.active {
+      background: var(--bg-surface);
+      color: var(--accent);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-light);
+    }
+
+    .badge {
+      background: var(--accent-bg);
+      padding: 2px 8px;
+      border-radius: 30px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    /* Toolbar */
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 20px;
+      background: var(--bg-surface);
+      padding: 12px 16px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-light);
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-body);
+      padding: 6px 12px;
+      border-radius: 40px;
+      border: 1px solid var(--border-med);
+      flex: 1 1 220px;
+    }
+
+    .search-box input {
+      background: none;
+      border: none;
+      outline: none;
+      flex: 1;
+      font-size: 0.8rem;
+      font-family: inherit;
+    }
+
+    select {
+      background: var(--bg-body);
+      border: 1px solid var(--border-med);
+      padding: 7px 12px;
+      border-radius: 30px;
+      font-size: 0.75rem;
+      color: var(--text-primary);
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    /* Table */
+    .table-wrapper {
+      background: var(--bg-surface);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-light);
+      overflow-x: auto;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .contract-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      min-width: 1000px;
+    }
+
+    .contract-table th {
+      text-align: right;
+      padding: 14px 10px;
+      background: var(--bg-side);
+      color: var(--text-secondary);
+      font-weight: 600;
+      border-bottom: 1px solid var(--border-light);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .contract-table td {
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--border-light);
+      vertical-align: middle;
+      text-align: right;
+    }
+
+    .contract-table tbody tr:hover {
+      background: var(--accent-bg);
+    }
+
+    .badge-status {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 40px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+
+    .badge-green {
+      background: var(--green-bg);
+      color: var(--green);
+    }
+
+    .badge-amber {
+      background: var(--amber-bg);
+      color: var(--amber);
+    }
+
+    .badge-red {
+      background: var(--red-bg);
+      color: var(--red);
+    }
+
+    .row-actions {
+      display: flex;
+      gap: 6px;
+      opacity: 0.5;
+      transition: opacity 0.15s;
+    }
+
+    tr:hover .row-actions {
+      opacity: 1;
+    }
+
+    .action-icon {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+      color: var(--text-secondary);
+      padding: 4px;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+
+    .action-icon:hover {
+      background: var(--border-light);
+      color: var(--accent);
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(2px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--bg-surface);
+      width: 90%;
+      max-width: 780px;
+      max-height: 85vh;
+      border-radius: 28px;
+      box-shadow: var(--shadow-md);
+      overflow-y: auto;
+      border: 1px solid var(--border-light);
+    }
+
+    .modal-header {
+      padding: 22px;
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-secondary);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      padding: 20px 22px;
+    }
+
+    .full-width {
+      grid-column: span 2;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      background: var(--bg-body);
+      border: 1px solid var(--border-med);
+      border-radius: 14px;
+      padding: 8px 12px;
+      font-family: inherit;
+      font-size: 0.8rem;
+      outline: none;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(194, 126, 58, 0.2);
+    }
+
+    .modal-footer {
+      padding: 16px 22px;
+      border-top: 1px solid var(--border-light);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    /* Toast */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      left: 24px;
+      z-index: 1100;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .toast {
+      background: white;
+      border-right: 5px solid var(--green);
+      padding: 12px 18px;
+      border-radius: 8px;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
+      font-size: 0.8rem;
+      font-weight: 500;
+      animation: slideIn 0.3s ease;
+    }
+
+    .toast.error {
+      border-right-color: var(--red);
+    }
+
+    .toast.warning {
+      border-right-color: var(--amber);
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(-100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+  </style>
 </head>
+
 <body>
+  <!-- Loading Screen -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <p>جاري التحقق من الجلسة...</p>
+  </div>
 
-<!-- Loading Screen -->
-<div id="loadingScreen">
-  <div class="loading"></div>
-  <p style="color: white; margin-top: 16px; font-size: 14px;">جاري تحميل النظام...</p>
-</div>
+  <div class="app" id="app" style="display: none;">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo-area">
+        <div class="logo-icon">📋</div>
+        <div class="brand">
+          <h1>نظام إدارة العقود</h1>
+          <p>Contract Management System</p>
+        </div>
+      </div>
 
-<div class="app" id="app"></div>
-<div class="toast-container" id="toast-container"></div>
+      <div class="header-actions">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div class="user-details">
+            <div class="user-name" id="userName">جاري التحميل...</div>
+            <div class="user-email" id="userEmail">Loading...</div>
+          </div>
+        </div>
+        <button class="btn btn-danger" onclick="logoutUser()">🚪 خروج</button>
+      </div>
+    </div>
 
-<script src="js/firebase-config.js"></script>
+    <!-- Stats -->
+    <div class="stats-grid" id="statsGrid"></div>
 
-<script>
-  // ---------- STATE ----------
-  let lang = 'en';
-  let currentTab = 'active'; // active, expired, analytics, alerts, log
-  let contracts = [];
-  let activityLog = [];
-  let nextId = 1;
-  let hiddenCols = [];
-  let sortColumn = 'lease_end';
-  let sortDirection = 1;
-  let filterCity = '', filterStatus = '', filterCycle = '', searchText = '';
-  let selectedRows = new Set();
-  let importPreviewData = null;
-  let currentUser = null;
+    <!-- Tabs -->
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="switchTab('all', this)">📋 جميع العقود</button>
+      <button class="nav-tab" onclick="switchTab('active', this)">✅ نشطة</button>
+      <button class="nav-tab" onclick="switchTab('expiring', this)">⚠️ قريبة الانتهاء</button>
+      <button class="nav-tab" onclick="switchTab('expired', this)">❌ منتهية</button>
+    </div>
 
-  const PAYMENT_CYCLES = ['Annual', 'Annual/variable', 'Biannual', 'One-time', 'Temporary', 'Quarterly'];
-  const STATUS_LIST = ['Active', 'Expiring Soon', 'Expired', 'New', 'Renewed', 'Pending Payment', 'Closed'];
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="🔍 بحث..." oninput="filterContracts()">
+      </div>
+      <select id="cityFilter" onchange="filterContracts()">
+        <option value="">كل المدن</option>
+      </select>
+      <select id="paymentFilter" onchange="filterContracts()">
+        <option value="">دورة الدفع</option>
+        <option value="شهري">شهري</option>
+        <option value="ربع سنوي">ربع سنوي</option>
+        <option value="سنوي">سنوي</option>
+      </select>
+      <button class="btn btn-primary" onclick="openModal()">➕ إضافة عقد</button>
+      <button class="btn" onclick="exportExcel()">📊 تصدير Excel</button>
+    </div>
 
-  const allColumns = [
-    {key:'city', labelEn:'City', labelAr:'المدينة', width:90},
-    {key:'camp', labelEn:'Camp', labelAr:'المخيم', width:90},
-    {key:'project_id', labelEn:'Project ID', labelAr:'رقم المشروع', width:100},
-    {key:'owner', labelEn:'Owner/Lessor', labelAr:'المالك/المؤجر', width:120},
-    {key:'floor', labelEn:'Floor', labelAr:'الطابق', width:70},
-    {key:'flat', labelEn:'Flat', labelAr:'الشقة', width:70},
-    {key:'rooms', labelEn:'Rooms', labelAr:'الغرف', width:70},
-    {key:'residents', labelEn:'Residents', labelAr:'السكان', width:80},
-    {key:'room_dist', labelEn:'Distribution', labelAr:'توزيع الغرف', width:100},
-    {key:'payment_cycle', labelEn:'Payment Cycle', labelAr:'دورة الدفع', width:110},
-    {key:'lease_start', labelEn:'Start of Lease', labelAr:'بداية الإيجار', width:100},
-    {key:'lease_end', labelEn:'End of Lease', labelAr:'نهاية الإيجار', width:100},
-    {key:'next_payment', labelEn:'Next Payment', labelAr:'الدفعة القادمة', width:100},
-    {key:'contract_no', labelEn:'Contract No', labelAr:'رقم العقد', width:100},
-    {key:'contract_link', labelEn:'Contract Link', labelAr:'رابط العقد', width:100},
-    {key:'notes', labelEn:'Notes', labelAr:'ملاحظات', width:130},
-    {key:'proj_end_date', labelEn:'Proj End Date', labelAr:'تاريخ نهاية المشروع', width:110},
-    {key:'status', labelEn:'Status', labelAr:'الحالة', width:100}
-  ];
+    <!-- Table -->
+    <div class="table-wrapper">
+      <table class="contract-table">
+        <thead>
+          <tr>
+            <th>المدينة</th>
+            <th>المخيم</th>
+            <th>المالك</th>
+            <th>رقم العقد</th>
+            <th>الإيجار السنوي</th>
+            <th>دورة الدفع</th>
+            <th>تاريخ البداية</th>
+            <th>تاريخ النهاية</th>
+            <th>الحالة</th>
+            <th>إجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="contractsTable">
+          <tr>
+            <td colspan="10" class="empty-state">
+              <div class="empty-icon">📋</div>
+              <p>جاري التحميل...</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-  // ===== FIREBASE AUTH CHECK =====
-  firebase.auth().onAuthStateChanged((user) => {
-    const loadingScreen = document.getElementById('loadingScreen');
-    
-    if (user) {
-      console.log('✅ المستخدم مسجل:', user.email);
-      currentUser = user;
-      loadingScreen.classList.add('hidden');
-      
-      // Load data from Firestore
-      loadContractsFromFirebase();
-      
-    } else {
-      console.log('❌ لا يوجد مستخدم مسجل');
-      window.location.replace('login.html');
-    }
-  });
+  <!-- Add/Edit Modal -->
+  <div class="modal-overlay" id="addModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modalTitle">➕ إضافة عقد جديد</h2>
+        <button class="close-btn" onclick="closeModal()">✕</button>
+      </div>
 
-  // ===== LOAD CONTRACTS FROM FIREBASE =====
-  async function loadContractsFromFirebase() {
-    try {
-      const snapshot = await firebase.firestore().collection('contracts').get();
-      
-      contracts = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      
-      nextId = contracts.length > 0 ? Math.max(...contracts.map(c => c.id || 1)) + 1 : 1;
-      
-      updateContractStatuses();
-      render();
-      
-    } catch (error) {
-      console.error('❌ خطأ في تحميل البيانات:', error);
-      toast(t('Error loading data','خطأ في تحميل البيانات'), 'error');
-    }
-  }
+      <div class="form-grid">
+        <div class="form-group">
+          <label>المدينة *</label>
+          <input id="city" placeholder="الرياض">
+        </div>
+        <div class="form-group">
+          <label>المخيم</label>
+          <input id="camp" placeholder="مخيم أ">
+        </div>
+        <div class="form-group">
+          <label>رقم المشروع</label>
+          <input id="projectId" placeholder="PRJ-001">
+        </div>
+        <div class="form-group">
+          <label>المالك / المؤجر *</label>
+          <input id="owner" placeholder="محمد أحمد">
+        </div>
+        <div class="form-group">
+          <label>الطابق</label>
+          <input id="floor" placeholder="2">
+        </div>
+        <div class="form-group">
+          <label>رقم الشقة</label>
+          <input id="flat" placeholder="201">
+        </div>
+        <div class="form-group">
+          <label>عدد الغرف</label>
+          <input id="rooms" type="number" placeholder="3" min="0">
+        </div>
+        <div class="form-group">
+          <label>عدد السكان</label>
+          <input id="residents" type="number" placeholder="4" min="0">
+        </div>
+        <div class="form-group">
+          <label>الإيجار السنوي (ريال) *</label>
+          <input id="annualRent" type="number" placeholder="60000" min="0">
+        </div>
+        <div class="form-group">
+          <label>دورة الدفع</label>
+          <select id="paymentCycle">
+            <option>شهري</option>
+            <option>ربع سنوي</option>
+            <option>سنوي</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>تاريخ البداية *</label>
+          <input id="startDate" type="date">
+        </div>
+        <div class="form-group">
+          <label>تاريخ النهاية *</label>
+          <input id="endDate" type="date">
+        </div>
+        <div class="form-group">
+          <label>رقم العقد</label>
+          <input id="contractNo" placeholder="CNT-2025-001">
+        </div>
+        <div class="form-group">
+          <label>رابط العقد</label>
+          <input id="contractLink" placeholder="https://...">
+        </div>
+        <div class="form-group full-width">
+          <label>ملاحظات</label>
+          <textarea id="notes" placeholder="أي ملاحظات إضافية..."></textarea>
+        </div>
+      </div>
 
-  // ===== LOGOUT =====
-  window.logoutUser = function() {
-    if (confirm(t('Are you sure?','هل أنت متأكد؟'))) {
-      firebase.auth().signOut()
-        .then(() => {
-          console.log('✅ تم تسجيل الخروج');
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal()">إلغاء</button>
+        <button class="btn btn-primary" onclick="saveContract()">💾 حفظ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="js/firebase-config.js"></script>
+
+  <script>
+    // ============================================
+    // STATE MANAGEMENT
+    // ============================================
+    let currentUser = null;
+    let contracts = [];
+    let currentTab = 'all';
+    let editingId = null;
+
+    // ============================================
+    // FIREBASE AUTH CHECK
+    // ============================================
+    firebase.auth().onAuthStateChanged((user) => {
+      const loadingOverlay = document.getElementById('loadingOverlay');
+      const app = document.getElementById('app');
+
+      if (user) {
+        currentUser = user;
+        loadingOverlay.style.display = 'none';
+        app.style.display = 'block';
+
+        // Update user info
+        document.getElementById('userEmail').textContent = user.email;
+        document.getElementById('userName').textContent = user.displayName || 'المستخدم';
+        document.getElementById('userAvatar').textContent = (user.displayName || user.email).charAt(0).toUpperCase();
+
+        // Load data
+        loadContracts();
+        loadStats();
+      } else {
+        window.location.replace('login.html');
+      }
+    });
+
+    // ============================================
+    // LOGOUT
+    // ============================================
+    function logoutUser() {
+      if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
+        firebase.auth().signOut().then(() => {
           window.location.replace('login.html');
-        })
-        .catch((error) => {
-          console.error('❌ خطأ:', error);
-          toast(t('Logout error','خطأ في تسجيل الخروج'), 'error');
         });
-    }
-  };
-
-  // helpers
-  function t(en, ar) { return lang === 'en' ? en : ar; }
-
-  function computeStatus(contract) {
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    let endDate = contract.lease_end ? new Date(contract.lease_end) : (contract.proj_end_date ? new Date(contract.proj_end_date) : null);
-    if (!endDate) return 'Active';
-    const diffDays = (endDate - today) / (1000*60*60*24);
-    if (diffDays < 0) return 'Expired';
-    if (diffDays <= 30) return 'Expiring Soon';
-    return 'Active';
-  }
-
-  function updateContractStatuses() {
-    contracts.forEach(c => { c._cachedStatus = computeStatus(c); });
-  }
-
-  function getFilteredContracts(pool = null) {
-    let source = pool === 'expired' ? contracts.filter(c => computeStatus(c) === 'Expired') : 
-                  (pool === 'active' ? contracts.filter(c => computeStatus(c) !== 'Expired') : contracts);
-    if (currentTab === 'active') source = contracts.filter(c => computeStatus(c) !== 'Expired');
-    else if (currentTab === 'expired') source = contracts.filter(c => computeStatus(c) === 'Expired');
-    else source = contracts;
-    return source.filter(c => {
-      if (filterCity && c.city !== filterCity) return false;
-      if (filterStatus && computeStatus(c) !== filterStatus) return false;
-      if (filterCycle && c.payment_cycle !== filterCycle) return false;
-      if (searchText) {
-        const str = `${c.city||''} ${c.camp||''} ${c.owner||''} ${c.contract_no||''}`.toLowerCase();
-        if (!str.includes(searchText.toLowerCase())) return false;
       }
-      return true;
-    });
-  }
-
-  function logAction(action, detail) {
-    activityLog.unshift({ action, detail, time: new Date().toLocaleString() });
-    if(activityLog.length > 200) activityLog.pop();
-  }
-
-  function toast(msg, type='success') {
-    const container = document.getElementById('toast-container');
-    const toastEl = document.createElement('div');
-    toastEl.className = 'toast';
-    toastEl.style.borderLeftColor = type === 'error' ? '#bc4a2c' : (type === 'warning' ? '#b45f1b' : '#2b7a3e');
-    toastEl.innerHTML = `<i class="ti ${type==='success'?'ti-check':type==='error'?'ti-alert-circle':'ti-alert-triangle'}" style="margin-right:8px"></i>${msg}`;
-    container.appendChild(toastEl);
-    setTimeout(() => toastEl.remove(), 2800);
-  }
-
-  // duplicate check
-  function isDuplicateContractNo(contractNo, excludeId = null) {
-    return contracts.some(c => c.contract_no === contractNo && c.id !== excludeId);
-  }
-
-  // CRUD
-  async function saveContractData(formData, editId = null) {
-    if (formData.contract_no && isDuplicateContractNo(formData.contract_no, editId)) {
-      toast(t('Duplicate contract number!', 'رقم العقد مكرر!'), 'error');
-      return false;
     }
-    
-    try {
-      if (editId === null || editId === 'null') {
-        const newId = Date.now().toString();
-        const newContract = { id: newId, ...formData, created_at: new Date().toISOString() };
-        await firebase.firestore().collection('contracts').doc(newId).set(newContract);
-        contracts.push(newContract);
-        logAction(t('Add','إضافة'), `${newContract.contract_no || newContract.city}`);
-        toast(t('Contract saved', 'تم حفظ العقد'));
-      } else {
-        const idx = contracts.findIndex(c => c.id === editId);
-        if (idx !== -1) {
-          const updatedContract = { ...contracts[idx], ...formData };
-          await firebase.firestore().collection('contracts').doc(editId).update(formData);
-          contracts[idx] = updatedContract;
-          logAction(t('Edit','تعديل'), `${contracts[idx].contract_no || contracts[idx].city}`);
-          toast(t('Contract updated', 'تم تحديث العقد'));
-        }
-      }
-      updateContractStatuses();
-      render();
-      return true;
-    } catch (error) {
-      console.error('❌ خطأ:', error);
-      toast(t('Error saving contract','خطأ في حفظ العقد'), 'error');
-      return false;
-    }
-  }
 
-  async function deleteContractById(id) {
-    const contract = contracts.find(c => c.id === id);
-    if (contract && confirm(t('Delete this contract?', 'حذف هذا العقد؟'))) {
+    // ============================================
+    // LOAD CONTRACTS FROM FIREBASE
+    // ============================================
+    async function loadContracts() {
       try {
-        await firebase.firestore().collection('contracts').doc(id).delete();
-        contracts = contracts.filter(c => c.id !== id);
-        selectedRows.delete(id);
-        logAction(t('Delete','حذف'), `${contract.contract_no || contract.city}`);
-        toast(t('Contract deleted', 'تم حذف العقد'));
-        updateContractStatuses();
-        render();
+        const snapshot = await firebase.firestore().collection('contracts').get();
+        contracts = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        updateCityFilter();
+        renderTable();
       } catch (error) {
-        console.error('❌ خطأ:', error);
-        toast(t('Error deleting contract','خطأ في حذف العقد'), 'error');
+        console.error('خطأ في تحميل العقود:', error);
+        showToast('خطأ في تحميل البيانات', 'error');
       }
     }
-  }
 
-  function restoreContract(id) {
-    const contract = contracts.find(c => c.id === id);
-    if(contract) {
-      contract.lease_end = '';
-      contract.proj_end_date = '';
-      contract.status = 'Renewed';
-      updateContractStatuses();
-      logAction(t('Restore','استرجاع'), contract.contract_no);
-      toast(t('Contract restored to active', 'تم استرجاع العقد للنشط'));
-      render();
+    // ============================================
+    // LOAD STATS
+    // ============================================
+    function loadStats() {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const active = contracts.filter(c => {
+        const endDate = c.endDate ? new Date(c.endDate) : null;
+        return !endDate || endDate > today;
+      }).length;
+
+      const expiring = contracts.filter(c => {
+        const endDate = c.endDate ? new Date(c.endDate) : null;
+        if (!endDate) return false;
+        const daysLeft = (endDate - today) / (1000 * 60 * 60 * 24);
+        return daysLeft > 0 && daysLeft <= 30;
+      }).length;
+
+      const expired = contracts.filter(c => {
+        const endDate = c.endDate ? new Date(c.endDate) : null;
+        return endDate && endDate <= today;
+      }).length;
+
+      const totalRent = contracts.reduce((sum, c) => sum + (c.annualRent || 0), 0);
+
+      document.getElementById('statsGrid').innerHTML = `
+        <div class="stat-card">
+          <div class="stat-label">📋 إجمالي العقود</div>
+          <div class="stat-value">${contracts.length}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">✅ عقود نشطة</div>
+          <div class="stat-value" style="color: var(--green);">${active}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">⚠️ قريبة الانتهاء</div>
+          <div class="stat-value" style="color: var(--amber);">${expiring}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">❌ منتهية</div>
+          <div class="stat-value" style="color: var(--red);">${expired}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">💰 إجمالي الإيجار السنوي</div>
+          <div class="stat-value" style="color: var(--accent);">${totalRent.toLocaleString()} ر.س</div>
+        </div>
+      `;
     }
-  }
 
-  // export
-  function exportCurrentView() {
-    let data = getFilteredContracts();
-    if(data.length === 0) { toast(t('No data to export','لا توجد بيانات'), 'warning'); return; }
-    const cols = allColumns.filter(c => !hiddenCols.includes(c.key));
-    const headers = cols.map(c => lang === 'en' ? c.labelEn : c.labelAr);
-    const rows = data.map(contract => cols.map(col => {
-      if(col.key === 'status') return computeStatus(contract);
-      return contract[col.key] || '';
-    }));
-    const csvRows = [headers.join(','), ...rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(','))];
-    const blob = new Blob([csvRows.join('\n')], {type:'text/csv'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `contracts_${new Date().toISOString().slice(0,10)}.csv`;
-    a.click();
-    logAction(t('Export','تصدير'), `${data.length} contracts`);
-    toast(t('Export complete','اكتمل التصدير'));
-  }
+    // ============================================
+    // RENDER TABLE
+    // ============================================
+    function renderTable() {
+      const tbody = document.getElementById('contractsTable');
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-  // alerts logic
-  function getAlerts() {
-    const alerts = [];
-    contracts.forEach(c => {
-      const status = computeStatus(c);
-      if (status === 'Expiring Soon') alerts.push({type:'warning', title:`Expiring Soon: ${c.contract_no || c.city}`, desc:c.owner||'', date:c.lease_end || c.proj_end_date});
-      if (status === 'Expired') alerts.push({type:'danger', title:`Expired: ${c.contract_no || c.city}`, desc:c.owner||'', date:c.lease_end || c.proj_end_date});
-      if (!c.contract_link || c.contract_link.trim() === '') alerts.push({type:'info', title:`Missing Contract Link: ${c.contract_no}`, desc:'Upload document link'});
-    });
-    return alerts;
-  }
+      let filtered = contracts;
 
-  // analytics data
-  function getAnalyticsData() {
-    const activeContracts = contracts.filter(c => computeStatus(c) !== 'Expired');
-    const cityMap = new Map(); activeContracts.forEach(c => { if(c.city) cityMap.set(c.city, (cityMap.get(c.city)||0)+1); });
-    const statusMap = new Map(); contracts.forEach(c => { const s = computeStatus(c); statusMap.set(s, (statusMap.get(s)||0)+1); });
-    const cycleMap = new Map(); activeContracts.forEach(c => { if(c.payment_cycle) cycleMap.set(c.payment_cycle, (cycleMap.get(c.payment_cycle)||0)+1); });
-    const ownerMap = new Map(); activeContracts.forEach(c => { if(c.owner) ownerMap.set(c.owner, (ownerMap.get(c.owner)||0)+1); });
-    return { cityMap, statusMap, cycleMap, ownerMap: [...ownerMap.entries()].sort((a,b)=>b[1]-a[1]).slice(0,6) };
-  }
-
-  // render functions
-  function renderTable(contractList) {
-    const visibleCols = allColumns.filter(c => !hiddenCols.includes(c.key));
-    let sorted = [...contractList];
-    if(sortColumn) {
-      sorted.sort((a,b) => {
-        let valA = a[sortColumn] || '', valB = b[sortColumn] || '';
-        if(sortColumn === 'status') { valA = computeStatus(a); valB = computeStatus(b); }
-        return valA < valB ? -sortDirection : valA > valB ? sortDirection : 0;
-      });
-    }
-    return `<div class="table-wrapper"><table class="contract-table"><thead><tr>
-      <th style="width:32px"><input type="checkbox" onchange="toggleSelectAll(this.checked)"></th>
-      ${visibleCols.map(c => `<th onclick="setSort('${c.key}')">${lang==='en'?c.labelEn:c.labelAr} ${sortColumn===c.key ? (sortDirection===1?'↑':'↓') : ''}</th>`).join('')}
-      <th>${t('Actions','إجراءات')}</th>
-    </tr></thead><tbody>
-      ${sorted.map(c => {
-        const status = computeStatus(c);
-        const statusClass = status==='Active'?'badge-green':status==='Expiring Soon'?'badge-amber':'badge-red';
-        const isSelected = selectedRows.has(c.id);
-        return `<tr style="background:${isSelected?'var(--accent-bg)':'transparent'}">
-          <td><input type="checkbox" ${isSelected?'checked':''} onchange="toggleSelectRow('${c.id}', this.checked)"></td>
-          ${visibleCols.map(col => {
-            if(col.key === 'status') return `<td><span class="badge-status ${statusClass}">${status}</span></td>`;
-            if(col.key === 'payment_cycle') return `<td><span style="background:var(--accent-bg);padding:2px 8px;border-radius:40px;">${c[col.key]||'—'}</span></td>`;
-            if(col.key === 'contract_link') return `<td>${c.contract_link ? `<a href="${c.contract_link}" target="_blank" style="color:var(--accent)"><i class="ti ti-external-link"></i> link</a>` : '—'}</td>`;
-            return `<td ondblclick="inlineEdit('${c.id}', '${col.key}')" style="cursor:text">${c[col.key] || '—'}</td>`;
-          }).join('')}
-          <td><div class="row-actions">
-            <button class="action-icon" onclick="inlineFullEdit('${c.id}')" title="${t('Edit','تعديل')}"><i class="ti ti-edit"></i></button>
-            ${currentTab === 'expired' ? `<button class="action-icon" onclick="restoreContract('${c.id}')"><i class="ti ti-refresh"></i></button>` : ''}
-            <button class="action-icon" onclick="deleteContractById('${c.id}')"><i class="ti ti-trash"></i></button>
-          </div></td>
-        </tr>`;
-      }).join('')}
-      ${sorted.length === 0 ? `<tr><td colspan="${visibleCols.length+2}" style="text-align:center;padding:40px;">${t('No contracts found. Add or import.','لا توجد عقود')}</td></tr>` : ''}
-    </tbody></table></div>`;
-  }
-
-  // inline edit via double click (opens modal with field focus)
-  function inlineEdit(id, fieldKey) {
-    const contract = contracts.find(c => c.id === id);
-    if(!contract) return;
-    openContractModal(contract, fieldKey);
-  }
-  
-  window.inlineFullEdit = function(id) { openContractModal(contracts.find(c=>c.id===id), null); };
-
-  function openContractModal(contract = null, focusField = null) {
-    const isEdit = !!contract;
-    const data = contract || {};
-    const fieldsHtml = allColumns.map(col => {
-      if (col.key === 'status') return '';
-      let value = data[col.key] || '';
-      if (col.key === 'payment_cycle') {
-        return `<div class="form-group"><label>${lang==='en'?col.labelEn:col.labelAr}</label><select id="field_${col.key}">
-          <option value="">—</option>${PAYMENT_CYCLES.map(opt => `<option ${value===opt?'selected':''} value="${opt}">${opt}</option>`).join('')}
-        </select></div>`;
+      // Filter by tab
+      if (currentTab === 'active') {
+        filtered = filtered.filter(c => {
+          const endDate = c.endDate ? new Date(c.endDate) : null;
+          return !endDate || endDate > today;
+        });
+      } else if (currentTab === 'expiring') {
+        filtered = filtered.filter(c => {
+          const endDate = c.endDate ? new Date(c.endDate) : null;
+          if (!endDate) return false;
+          const daysLeft = (endDate - today) / (1000 * 60 * 60 * 24);
+          return daysLeft > 0 && daysLeft <= 30;
+        });
+      } else if (currentTab === 'expired') {
+        filtered = filtered.filter(c => {
+          const endDate = c.endDate ? new Date(c.endDate) : null;
+          return endDate && endDate <= today;
+        });
       }
-      return `<div class="form-group"><label>${lang==='en'?col.labelEn:col.labelAr}</label><input type="text" id="field_${col.key}" value="${String(value).replace(/"/g, '&quot;')}"></div>`;
-    }).join('');
-    const modalHtml = `<div class="modal-overlay" id="dynamicModal"><div class="modal">
-      <div class="modal-header"><h3>${isEdit ? t('Edit Contract','تعديل العقد') : t('Add Contract','إضافة عقد')}</h3><button class="btn" onclick="closeModal()" style="padding:4px 8px;">✕</button></div>
-      <div class="form-grid" style="max-height:60vh;overflow-y:auto;">${fieldsHtml}</div>
-      <div class="modal-footer"><button class="btn" onclick="closeModal()">${t('Cancel','إلغاء')}</button>
-      <button class="btn btn-primary" onclick="submitContractForm('${isEdit?data.id:''}')">${t('Save','حفظ')}</button></div>
-    </div></div>`;
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-    if(focusField && document.getElementById(`field_${focusField}`)) document.getElementById(`field_${focusField}`).focus();
-  }
 
-  window.submitContractForm = async function(editId) {
-    const formData = {};
-    for(let col of allColumns) {
-      if(col.key === 'status') continue;
-      const el = document.getElementById(`field_${col.key}`);
-      if(el) formData[col.key] = el.value.trim();
-    }
-    if(await saveContractData(formData, editId || null)) closeModal();
-  };
-
-  window.closeModal = function() { const modal = document.getElementById('dynamicModal'); if(modal) modal.remove(); };
-
-  // import excel/csv
-  window.triggerImport = function() {
-    const fileInput = document.createElement('input'); fileInput.type = 'file'; fileInput.accept = '.xlsx,.xls,.csv';
-    fileInput.onchange = async (e) => {
-      const file = e.target.files[0]; if(!file) return;
-      let dataRows = [];
-      if(file.name.endsWith('.csv')) {
-        const text = await file.text();
-        const lines = text.split('\n').filter(l=>l.trim());
-        if(lines.length<2) return toast('Empty CSV','error');
-        const headers = lines[0].split(',').map(h=>h.trim().replace(/"/g,''));
-        dataRows = lines.slice(1).map(l=>{ let vals=l.split(',').map(v=>v.trim().replace(/"/g,'')); let obj={}; headers.forEach((h,i)=>obj[h]=vals[i]); return obj; });
-      } else {
-        const ab = await file.arrayBuffer();
-        const wb = XLSX.read(ab);
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        dataRows = XLSX.utils.sheet_to_json(ws, {defval:''});
+      // Filter by search
+      const searchText = document.getElementById('searchInput').value.toLowerCase();
+      if (searchText) {
+        filtered = filtered.filter(c =>
+          (c.city || '').toLowerCase().includes(searchText) ||
+          (c.camp || '').toLowerCase().includes(searchText) ||
+          (c.owner || '').toLowerCase().includes(searchText) ||
+          (c.contractNo || '').toLowerCase().includes(searchText)
+        );
       }
-      if(dataRows.length) showImportPreview(dataRows);
-    };
-    fileInput.click();
-  };
 
-  function showImportPreview(rows) {
-    const colMap = { 'city':'city','camp':'camp','project id':'project_id','project_id':'project_id','owner':'owner','floor':'floor','flat':'flat','rooms':'rooms','residents':'residents','distribution':'room_dist','payment cycle':'payment_cycle','start of lease':'lease_start','end of lease':'lease_end','next payment':'next_payment','contract no':'contract_no','contract link':'contract_link','notes':'notes','proj end date':'proj_end_date'};
-    const sample = rows.slice(0,3);
-    const previewHtml = `<div class="modal-overlay" id="importModal"><div class="modal" style="max-width:860px"><div class="modal-header"><h3>${t('Import Preview','معاينة الاستيراد')}</h3><button onclick="closeModal()">✕</button></div>
-    <div style="padding:20px"><p>${rows.length} ${t('records found','سجل موجود')}</p>
-    <div class="import-preview-box"><table style="font-size:11px">${sample.map(r=>`<tr>${Object.values(r).slice(0,5).map(v=>`<td style="padding:4px">${v}</td>`).join('')}</tr>`).join('')}</table></div>
-    <div class="modal-footer" style="margin-top:16px"><button class="btn" onclick="closeModal()">${t('Cancel','إلغاء')}</button>
-    <button class="btn btn-primary" onclick="processImportData(${JSON.stringify(rows).replace(/"/g, '&quot;')})">${t('Process & Import Data','معالجة واستيراد')}</button></div></div></div></div>`;
-    document.body.insertAdjacentHTML('beforeend', previewHtml);
-    window.processImportData = async function(importRows) {
-      let added = 0, skipped = 0;
-      for(let r of importRows) {
-        let obj = { id: Date.now().toString() + Math.random() };
-        for(let [key, val] of Object.entries(r)) {
-          const lowerKey = key.trim().toLowerCase();
-          const mapped = colMap[lowerKey] || (colMap[key]?colMap[key]:null);
-          if(mapped) obj[mapped] = String(val).trim();
+      // Filter by city
+      const cityFilter = document.getElementById('cityFilter').value;
+      if (cityFilter) {
+        filtered = filtered.filter(c => c.city === cityFilter);
+      }
+
+      // Filter by payment cycle
+      const paymentFilter = document.getElementById('paymentFilter').value;
+      if (paymentFilter) {
+        filtered = filtered.filter(c => c.paymentCycle === paymentFilter);
+      }
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" class="empty-state"><div class="empty-icon">📭</div><p>لا توجد عقود</p></td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(c => {
+        const endDate = c.endDate ? new Date(c.endDate) : null;
+        const daysLeft = endDate ? (endDate - today) / (1000 * 60 * 60 * 24) : null;
+
+        let statusBadge = '<span class="badge-status badge-green">نشط</span>';
+        if (endDate && endDate <= today) {
+          statusBadge = '<span class="badge-status badge-red">منتهي</span>';
+        } else if (daysLeft !== null && daysLeft > 0 && daysLeft <= 30) {
+          statusBadge = '<span class="badge-status badge-amber">قريب الانتهاء</span>';
         }
-        if(obj.contract_no && contracts.find(c=>c.contract_no === obj.contract_no)) { skipped++; continue; }
+
+        return `
+          <tr>
+            <td>${c.city || '-'}</td>
+            <td>${c.camp || '-'}</td>
+            <td>${c.owner || '-'}</td>
+            <td>${c.contractNo || '-'}</td>
+            <td>${(c.annualRent || 0).toLocaleString()} ر.س</td>
+            <td>${c.paymentCycle || '-'}</td>
+            <td>${c.startDate || '-'}</td>
+            <td>${c.endDate || '-'}</td>
+            <td>${statusBadge}</td>
+            <td>
+              <div class="row-actions">
+                <button class="action-icon" onclick="editContract('${c.id}')" title="تعديل">✏️</button>
+                <button class="action-icon" onclick="deleteContract('${c.id}')" title="حذف">🗑️</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // ============================================
+    // UTILITIES
+    // ============================================
+    function filterContracts() {
+      renderTable();
+    }
+
+    function updateCityFilter() {
+      const cities = [...new Set(contracts.map(c => c.city).filter(Boolean))];
+      const select = document.getElementById('cityFilter');
+      const currentValue = select.value;
+      select.innerHTML = '<option value="">كل المدن</option>' + 
+        cities.map(city => `<option value="${city}">${city}</option>`).join('');
+      select.value = currentValue;
+    }
+
+    function switchTab(tab, element) {
+      currentTab = tab;
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      element.classList.add('active');
+      renderTable();
+    }
+
+    // ============================================
+    // MODAL OPERATIONS
+    // ============================================
+    function openModal() {
+      editingId = null;
+      document.getElementById('modalTitle').textContent = '➕ إضافة عقد جديد';
+      document.getElementById('city').value = '';
+      document.getElementById('camp').value = '';
+      document.getElementById('projectId').value = '';
+      document.getElementById('owner').value = '';
+      document.getElementById('floor').value = '';
+      document.getElementById('flat').value = '';
+      document.getElementById('rooms').value = '';
+      document.getElementById('residents').value = '';
+      document.getElementById('annualRent').value = '';
+      document.getElementById('paymentCycle').value = 'شهري';
+      document.getElementById('startDate').value = '';
+      document.getElementById('endDate').value = '';
+      document.getElementById('contractNo').value = '';
+      document.getElementById('contractLink').value = '';
+      document.getElementById('notes').value = '';
+      document.getElementById('addModal').classList.add('open');
+    }
+
+    function closeModal() {
+      document.getElementById('addModal').classList.remove('open');
+    }
+
+    async function editContract(id) {
+      const contract = contracts.find(c => c.id === id);
+      if (!contract) return;
+
+      editingId = id;
+      document.getElementById('modalTitle').textContent = '✏️ تعديل العقد';
+      document.getElementById('city').value = contract.city || '';
+      document.getElementById('camp').value = contract.camp || '';
+      document.getElementById('projectId').value = contract.projectId || '';
+      document.getElementById('owner').value = contract.owner || '';
+      document.getElementById('floor').value = contract.floor || '';
+      document.getElementById('flat').value = contract.flat || '';
+      document.getElementById('rooms').value = contract.rooms || '';
+      document.getElementById('residents').value = contract.residents || '';
+      document.getElementById('annualRent').value = contract.annualRent || '';
+      document.getElementById('paymentCycle').value = contract.paymentCycle || 'شهري';
+      document.getElementById('startDate').value = contract.startDate || '';
+      document.getElementById('endDate').value = contract.endDate || '';
+      document.getElementById('contractNo').value = contract.contractNo || '';
+      document.getElementById('contractLink').value = contract.contractLink || '';
+      document.getElementById('notes').value = contract.notes || '';
+      document.getElementById('addModal').classList.add('open');
+    }
+
+    async function saveContract() {
+      const city = document.getElementById('city').value;
+      const owner = document.getElementById('owner').value;
+      const annualRent = document.getElementById('annualRent').value;
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+
+      if (!city || !owner || !annualRent || !startDate || !endDate) {
+        showToast('الرجاء ملء جميع الحقول المطلوبة', 'error');
+        return;
+      }
+
+      const contractData = {
+        city: city,
+        camp: document.getElementById('camp').value,
+        projectId: document.getElementById('projectId').value,
+        owner: owner,
+        floor: document.getElementById('floor').value,
+        flat: document.getElementById('flat').value,
+        rooms: parseInt(document.getElementById('rooms').value) || 0,
+        residents: parseInt(document.getElementById('residents').value) || 0,
+        annualRent: parseFloat(annualRent),
+        paymentCycle: document.getElementById('paymentCycle').value,
+        startDate: startDate,
+        endDate: endDate,
+        contractNo: document.getElementById('contractNo').value,
+        contractLink: document.getElementById('contractLink').value,
+        notes: document.getElementById('notes').value,
+        updatedAt: new Date().toISOString()
+      };
+
+      try {
+        if (editingId) {
+          await firebase.firestore().collection('contracts').doc(editingId).update(contractData);
+          showToast('تم تحديث العقد بنجاح', 'success');
+        } else {
+          await firebase.firestore().collection('contracts').add(contractData);
+          showToast('تم إضافة العقد بنجاح', 'success');
+        }
+        closeModal();
+        loadContracts();
+        loadStats();
+      } catch (error) {
+        console.error('خطأ:', error);
+        showToast('حدث خطأ أثناء حفظ العقد', 'error');
+      }
+    }
+
+    async function deleteContract(id) {
+      if (confirm('هل أنت متأكد من حذف هذا العقد؟')) {
         try {
-          await firebase.firestore().collection('contracts').doc(obj.id).set(obj);
-          contracts.push(obj);
-          added++;
+          await firebase.firestore().collection('contracts').doc(id).delete();
+          showToast('تم حذف العقد بنجاح', 'success');
+          loadContracts();
+          loadStats();
         } catch (error) {
-          console.error('Error saving contract:', error);
-          skipped++;
+          console.error('خطأ:', error);
+          showToast('حدث خطأ أثناء حذف العقد', 'error');
         }
       }
-      updateContractStatuses();
-      logAction(t('Excel Import','استيراد اكسل'), `${added} added, ${skipped} skipped`);
-      toast(t('Import successful','تم الاستيراد بنجاح'));
-      closeModal();
-      render();
-    };
-  }
-
-  // render main
-  function render() {
-    updateContractStatuses();
-    const filtered = getFilteredContracts();
-    const activeCount = contracts.filter(c=>computeStatus(c)!=='Expired').length;
-    const expiredCount = contracts.filter(c=>computeStatus(c)==='Expired').length;
-    const expiringSoon = contracts.filter(c=>computeStatus(c)==='Expiring Soon').length;
-    const alerts = getAlerts();
-    let mainHtml = '';
-    if(currentTab === 'active' || currentTab === 'expired') {
-      const statsBar = `<div class="stats-grid"><div class="stat-card"><div class="stat-label">${t('Total Contracts','إجمالي العقود')}</div><div class="stat-value">${contracts.length}</div></div>
-      <div class="stat-card"><div class="stat-label">${t('Active','نشط')}</div><div class="stat-value">${activeCount}</div></div>
-      <div class="stat-card"><div class="stat-label">${t('Expiring Soon','تنتهي قريباً')}</div><div class="stat-value">${expiringSoon}</div></div>
-      <div class="stat-card"><div class="stat-label">${t('Expired','منتهية')}</div><div class="stat-value">${expiredCount}</div></div></div>`;
-      const toolbar = `<div class="toolbar"><div class="search-box"><i class="ti ti-search"></i><input placeholder="${t('Search...','بحث...')}" oninput="searchText=this.value;render()" value="${searchText}"></div>
-      <select onchange="filterCity=this.value;render()"><option value="">${t('All Cities','كل المدن')}</option>${[...new Set(contracts.map(c=>c.city).filter(Boolean))].map(city=>`<option value="${city}">${city}</option>`)}</select>
-      <select onchange="filterStatus=this.value;render()"><option value="">${t('All Statuses','كل الحالات')}</option>${STATUS_LIST.map(s=>`<option value="${s}">${s}</option>`)}</select>
-      <select onchange="filterCycle=this.value;render()"><option value="">${t('All Cycles','كل الدورات')}</option>${PAYMENT_CYCLES.map(c=>`<option>${c}</option>`)}</select>
-      <button class="btn" onclick="openContractModal()"><i class="ti ti-plus"></i>${t('Add Contract','إضافة عقد')}</button>
-      <button class="btn" onclick="triggerImport()"><i class="ti ti-upload"></i>${t('Import','استيراد')}</button>
-      <button class="btn" onclick="exportCurrentView()"><i class="ti ti-download"></i>${t('Export','تصدير')}</button>
-      <button class="btn" onclick="toggleColumnPanel()"><i class="ti ti-columns"></i>${t('Columns','أعمدة')}</button>
-      ${selectedRows.size ? `<button class="btn" style="color:var(--red)" onclick="deleteSelectedRows()"><i class="ti ti-trash"></i>${t('Delete Selected','حذف المحدد')} (${selectedRows.size})</button>` : ''}
-      </div>`;
-      mainHtml = statsBar + toolbar + renderTable(filtered);
-    } else if(currentTab === 'analytics') {
-      const { cityMap, statusMap, cycleMap, ownerMap } = getAnalyticsData();
-      const maxCity = Math.max(...Array.from(cityMap.values()),1);
-      mainHtml = `<div class="analytics-grid"><h4 style="margin-bottom:16px">${t('Analytics Dashboard','لوحة التحليلات')}</h4>
-        <div class="stats-grid" style="grid-template-columns:1fr 1fr; gap:24px;"><div><strong>${t('By City','حسب المدينة')}</strong>${Array.from(cityMap.entries()).map(([k,v])=>`<div class="bar-row"><span style="width:80px">${k}</span><div style="flex:1;background:#e9e5da;border-radius:20px;"><div class="bar-fill" style="width:${(v/maxCity)*100}%;background:var(--accent);">${v}</div></div></div>`).join('')||'—'}</div>
-        <div><strong>${t('By Status','حسب الحالة')}</strong>${Array.from(statusMap.entries()).map(([k,v])=>`<div>${k}: ${v}</div>`).join('')}</div>
-        <div><strong>${t('Payment Cycles','دورات الدفع')}</strong>${Array.from(cycleMap.entries()).map(([k,v])=>`<div>${k}: ${v}</div>`).join('')}</div>
-        <div><strong>${t('Top Owners','أبرز الملاك')}</strong>${ownerMap.map(([k,v])=>`<div>${k}: ${v}</div>`).join('')||'—'}</div>
-      </div></div>`;
-    } else if(currentTab === 'alerts') {
-      mainHtml = `<div class="alerts-container"><h4>${t('Alerts & Notifications','تنبيهات')}</h4>${alerts.map(a=>`<div class="alert-item"><i class="ti ${a.type==='warning'?'ti-alert-triangle':a.type==='danger'?'ti-alert-circle':'ti-info-circle'}" style="color:${a.type==='danger'?'var(--red)':'var(--amber)'}"></i><div><strong>${a.title}</strong><div>${a.desc||''}</div></div></div>`).join('')||'<div class="alert-item">✨ No alerts</div>'}</div>`;
-    } else if(currentTab === 'log') {
-      mainHtml = `<div class="alerts-container"><h4>${t('Activity Log','سجل النشاطات')}</h4>${activityLog.slice(0,50).map(l=>`<div class="alert-item"><i class="ti ti-history"></i><div><strong>${l.action}</strong><div style="font-size:11px">${l.detail} — ${l.time}</div></div></div>`).join('')||'<div>No activities yet</div>'}</div>`;
     }
 
-    const userDisplay = currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'User';
+    // ============================================
+    // EXPORT TO EXCEL
+    // ============================================
+    function exportExcel() {
+      try {
+        const data = contracts.map(c => ({
+          'المدينة': c.city,
+          'المخيم': c.camp,
+          'رقم المشروع': c.projectId,
+          'المالك': c.owner,
+          'الطابق': c.floor,
+          'الشقة': c.flat,
+          'عدد الغرف': c.rooms,
+          'عدد السكان': c.residents,
+          'الإيجار السنوي': c.annualRent,
+          'دورة الدفع': c.paymentCycle,
+          'تاريخ البداية': c.startDate,
+          'تاريخ النهاية': c.endDate,
+          'رقم العقد': c.contractNo,
+          'ملاحظات': c.notes
+        }));
 
-    document.getElementById('app').innerHTML = `
-      <div class="header"><div class="logo-area"><img class="logo-img" src="https://pbs.twimg.com/profile_images/1812360429827424257/MHJiLbCy_400x400.jpg" alt="logo"><div class="brand"><h1>${t('Contract Management System','نظام إدارة العقود')}</h1><p>${t('Residential & Administrative','سكني وإداري')}</p></div></div><div class="header-actions"><div class="user-info">👤 ${userDisplay}</div><button class="btn lang-btn" onclick="toggleLang()">${lang==='en'?'عربي':'English'}</button><button class="btn" onclick="switchTab('alerts')"><i class="ti ti-bell"></i>${alerts.length}</button><button class="btn btn-logout" onclick="logoutUser()"><i class="ti ti-logout"></i>${t('Logout','خروج')}</button></div></div>
-      <div class="nav-tabs">${['active','expired','analytics','alerts','log'].map(tab => `<div class="nav-tab ${currentTab===tab?'active':''}" onclick="switchTab('${tab}')"><i class="ti ${tab==='active'?'ti-file-check':tab==='expired'?'ti-file-x':tab==='analytics'?'ti-chart-bar':tab==='alerts'?'ti-bell':'ti-history'}"></i>${t(tab==='active'?'Active Contracts':'Expired Contracts','العقود النشطة')} ${(tab==='active'?activeCount:tab==='expired'?expiredCount:'') ? `<span class="badge">${tab==='active'?activeCount:expiredCount}</span>` : ''}</div>`).join('')}</div>
-      ${mainHtml}
-    `;
-  }
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'العقود');
+        XLSX.writeFile(workbook, `العقود_${new Date().toISOString().slice(0, 10)}.xlsx`);
+        showToast('تم تصدير البيانات بنجاح', 'success');
+      } catch (error) {
+        console.error('خطأ:', error);
+        showToast('حدث خطأ أثناء التصدير', 'error');
+      }
+    }
 
-  window.toggleLang = () => { lang = lang === 'en' ? 'ar' : 'en'; render(); };
-  window.switchTab = (tab) => { currentTab = tab; filterCity=''; filterStatus=''; filterCycle=''; searchText=''; selectedRows.clear(); sortColumn='lease_end'; sortDirection=1; render(); };
-  window.setSort = (col) => { if(sortColumn===col) sortDirection*=-1; else { sortColumn=col; sortDirection=1; } render(); };
-  window.toggleSelectRow = (id, checked) => { if(checked) selectedRows.add(id); else selectedRows.delete(id); render(); };
-  window.toggleSelectAll = (checked) => { getFilteredContracts().forEach(c => { if(checked) selectedRows.add(c.id); else selectedRows.delete(c.id); }); render(); };
-  window.deleteSelectedRows = () => { if(selectedRows.size) { contracts = contracts.filter(c => !selectedRows.has(c.id)); selectedRows.clear(); updateContractStatuses(); logAction('Bulk delete','multiple'); toast('Selected deleted'); render(); } };
-  window.toggleColumnPanel = () => { const cols = allColumns.filter(c=>c.key!=='status'); const newHidden = []; if(hiddenCols.length) newHidden.push(...hiddenCols); const msg = prompt('Toggle columns (type column keys separated by comma to hide: city,owner...)', hiddenCols.join(',')); if(msg !== null) { const toHide = msg.split(',').map(s=>s.trim()); hiddenCols = allColumns.filter(c=>toHide.includes(c.key)).map(c=>c.key); render(); } };
-
-  // Window global functions
-  window.openContractModal = openContractModal;
-  window.inlineEdit = inlineEdit;
-
-  // initial empty state (will load from Firebase)
-  contracts = [];
-  updateContractStatuses();
-</script>
+    // ============================================
+    // TOAST NOTIFICATION
+    // ============================================
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+  </script>
 </body>
+
 </html>
