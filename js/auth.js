@@ -2,7 +2,7 @@ function loginUser(email, password) {
   return auth.signInWithEmailAndPassword(email, password)
     .then(function(userCredential) {
       console.log("تم تسجيل الدخول:", userCredential.user.email);
-      window.location.href = "dashboard.html";
+      window.location.replace("dashboard.html");
     })
     .catch(function(error) {
       console.error("خطأ:", error.message);
@@ -13,7 +13,7 @@ function loginUser(email, password) {
 function logoutUser() {
   auth.signOut().then(function() {
     console.log("تم تسجيل الخروج");
-    window.location.href = "login.html";
+    window.location.replace("login.html");
   });
 }
 
@@ -28,10 +28,10 @@ auth.onAuthStateChanged(function(user) {
     if (logoutButton) logoutButton.classList.remove('hidden');
   } else {
     console.log("لا يوجد مستخدم");
-    var protectedPages = ['dashboard.html', 'workers.html', 'camps.html'];
+    var protectedPages = ['dashboard.html', 'workers.html', 'camps.html', 'dashboard-v2.html'];
     var currentPage = window.location.pathname.split('/').pop();
     if (protectedPages.indexOf(currentPage) !== -1) {
-      window.location.href = "login.html";
+      window.location.replace("login.html");
     }
   }
 });
