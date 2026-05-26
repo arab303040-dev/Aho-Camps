@@ -20,12 +20,12 @@ function logoutUser() {
 auth.onAuthStateChanged(function(user) {
   if (user) {
     console.log("المستخدم:", user.email);
-    var userEmail = document.getElementById('userEmail');
-    var loginBtn = document.getElementById('loginBtn');
-    var logoutBtn = document.getElementById('logoutBtn');
-    if (userEmail) userEmail.textContent = user.email;
-    if (loginBtn) loginBtn.classList.add('hidden');
-    if (logoutBtn) logoutBtn.classList.remove('hidden');
+    var emailElement = document.getElementById('userEmail');
+    var loginButton = document.getElementById('loginBtn');
+    var logoutButton = document.getElementById('logoutBtn');
+    if (emailElement) emailElement.textContent = user.email;
+    if (loginButton) loginButton.classList.add('hidden');
+    if (logoutButton) logoutButton.classList.remove('hidden');
   } else {
     console.log("لا يوجد مستخدم");
     var protectedPages = ['dashboard.html', 'workers.html', 'camps.html'];
