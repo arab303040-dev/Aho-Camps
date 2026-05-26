@@ -1,1 +1,100 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>لوحة التحكم - Aho Camps</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+    body { font-family: 'Cairo', sans-serif; background: #1a1a2e; color: white; }
+    .glass { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; }
+    .card { transition: all 0.3s; }
+    .card:hover { transform: translateY(-5px); }
+  </style>
+</head>
+<body class="p-6">
 
+  <!-- شريط علوي -->
+  <div class="glass p-4 mb-6 flex justify-between items-center">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-2xl">🏕️</div>
+      <h1 class="text-xl font-bold">Aho Camps</h1>
+    </div>
+    <div class="flex items-center gap-4">
+      <span id="userEmail" class="text-gray-300"></span>
+      <button onclick="logoutUser()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg">خروج</button>
+    </div>
+  </div>
+
+  <!-- إحصائيات -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    <div class="glass p-6 card">
+      <p class="text-gray-400 text-sm">العمال</p>
+      <h3 class="text-3xl font-bold text-purple-400" id="totalWorkers">0</h3>
+    </div>
+    <div class="glass p-6 card">
+      <p class="text-gray-400 text-sm">السكنات</p>
+      <h3 class="text-3xl font-bold text-pink-400" id="totalCamps">0</h3>
+    </div>
+    <div class="glass p-6 card">
+      <p class="text-gray-400 text-sm">الإشغال</p>
+      <h3 class="text-3xl font-bold text-orange-400" id="occupancyRate">0%</h3>
+    </div>
+    <div class="glass p-6 card">
+      <p class="text-gray-400 text-sm">الغرف الفارغة</p>
+      <h3 class="text-3xl font-bold text-green-400" id="emptyRooms">0</h3>
+    </div>
+  </div>
+
+  <!-- أزرار -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <a href="workers.html" class="glass p-6 text-center card">
+      <div class="text-4xl mb-2">👷</div>
+      <p>العمال</p>
+    </a>
+    <a href="camps.html" class="glass p-6 text-center card">
+      <div class="text-4xl mb-2">🏠</div>
+      <p>السكنات</p>
+    </a>
+    <a href="import.html" class="glass p-6 text-center card">
+      <div class="text-4xl mb-2">📥</div>
+      <p>استيراد</p>
+    </a>
+    <a href="#" class="glass p-6 text-center card">
+      <div class="text-4xl mb-2">📊</div>
+      <p>تقارير</p>
+    </a>
+  </div>
+
+  <script src="js/firebase-config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/database.js"></script>
+
+  <script>
+    async function loadStats() {
+      const workers = await getAllWorkers();
+      const camps = await getAllCamps();
+      
+      document.getElementById('totalWorkers').textContent = workers.length;
+      document.getElementById('totalCamps').textContent = camps.length;
+      
+      let totalCapacity = 0;
+      let totalOccupancy = 0;
+      camps.forEach(camp => {
+        totalCapacity += camp.capacity || 0;
+        totalOccupancy += camp.currentOccupancy || 0;
+      });
+      
+      const rate = totalCapacity > 0 ? Math.round((totalOccupancy / totalCapacity) * 100) : 0;
+      document.getElementById('occupancyRate').textContent = rate + '%';
+      document.getElementById('emptyRooms').textContent = totalCapacity - totalOccupancy;
+    }
+
+    window.addEventListener('load', loadStats);
+  </script>
+
+</body>
+</html>
