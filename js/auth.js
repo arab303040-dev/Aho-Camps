@@ -2,7 +2,7 @@ function loginUser(email, password) {
   return auth.signInWithEmailAndPassword(email, password)
     .then(function(userCredential) {
       console.log("تم تسجيل الدخول:", userCredential.user.email);
-      window.location.replace("dashboard.html");
+      window.location.replace("camp-lease-contracts.html");
     })
     .catch(function(error) {
       console.error("خطأ:", error.message);
@@ -28,7 +28,7 @@ auth.onAuthStateChanged(function(user) {
     if (logoutButton) logoutButton.classList.remove('hidden');
   } else {
     console.log("لا يوجد مستخدم");
-    var protectedPages = ['dashboard.html', 'workers.html', 'camps.html', 'dashboard-v2.html'];
+    var protectedPages = ['camp-lease-contracts.html', 'dashboard.html', 'workers.html', 'camps.html'];
     var currentPage = window.location.pathname.split('/').pop();
     if (protectedPages.indexOf(currentPage) !== -1) {
       window.location.replace("login.html");
